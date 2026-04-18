@@ -18,7 +18,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
-<body x-data="blogApp" @keydown.window="handleShortcut($event)">
+<body x-data="blogApp" @keydown.window="handleShortcut($event)" @paste.window="handleEditorPaste($event)">
 
 <!-- ═══════════════════════ HEADER ═══════════════════════ -->
 <header class="site-header">
@@ -436,14 +436,24 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify(body),
                 }
             );
+            const retryRes = (res.status === 409)
+                ? await this.githubRequest(
+                    `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
+                    {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...body, sha: await this.getFileSha(path) }),
+                    }
+                )
+                : res;
 
-            if (res.status === 401) {
+            if (retryRes.status === 401) {
                 this.clearAdminSession();
                 this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
                 return false;
             }
-            if (res.status === 403) {
-                const reason = await this.readGithubErrorMessage(res);
+            if (retryRes.status === 403) {
+                const reason = await this.readGithubErrorMessage(retryRes);
                 if (/bad credentials|expired/i.test(reason)) {
                     this.clearAdminSession();
                     this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
@@ -452,8 +462,8 @@ document.addEventListener('alpine:init', () => {
                 this.showMsg(reason ? `GitHub denied write: ${reason}` : 'GitHub denied write (403). Check token permissions.', 'error');
                 return false;
             }
-            if (!res.ok) {
-                this.showMsg(`GitHub save failed (${res.status})`, 'error');
+            if (!retryRes.ok) {
+                this.showMsg(`GitHub save failed (${retryRes.status})`, 'error');
                 return false;
             }
             return true;
@@ -478,14 +488,24 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify(body),
                 }
             );
+            const retryRes = (res.status === 409)
+                ? await this.githubRequest(
+                    `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
+                    {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...body, sha: await this.getFileSha(path) }),
+                    }
+                )
+                : res;
 
-            if (res.status === 401) {
+            if (retryRes.status === 401) {
                 this.clearAdminSession();
                 this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
                 return false;
             }
-            if (res.status === 403) {
-                const reason = await this.readGithubErrorMessage(res);
+            if (retryRes.status === 403) {
+                const reason = await this.readGithubErrorMessage(retryRes);
                 if (/bad credentials|expired/i.test(reason)) {
                     this.clearAdminSession();
                     this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
@@ -494,8 +514,8 @@ document.addEventListener('alpine:init', () => {
                 this.showMsg(reason ? `GitHub denied upload: ${reason}` : 'GitHub denied upload (403). Check token permissions.', 'error');
                 return false;
             }
-            if (!res.ok) {
-                this.showMsg(`GitHub upload failed (${res.status})`, 'error');
+            if (!retryRes.ok) {
+                this.showMsg(`GitHub upload failed (${retryRes.status})`, 'error');
                 return false;
             }
             return true;
@@ -762,14 +782,16 @@ document.addEventListener('alpine:init', () => {
 
         async handleEditorPaste(event) {
             if (this.view !== 'editor') return;
+            if (event.defaultPrevented) return;
             const items = Array.from(event.clipboardData?.items || []);
             const imageItem = items.find((item) => item.type && item.type.startsWith('image/'));
-            if (!imageItem) return;
-
-            const file = imageItem.getAsFile();
+            const fromItem = imageItem ? imageItem.getAsFile() : null;
+            const fromFiles = Array.from(event.clipboardData?.files || []).find((file) => file?.type?.startsWith('image/'));
+            const file = fromItem || fromFiles;
             if (!file) return;
 
             event.preventDefault();
+            event.stopPropagation?.();
             await this.insertImageMarkdown(file);
         },
 
