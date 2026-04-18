@@ -490,7 +490,8 @@ document.addEventListener('alpine:init', () => {
         async getFileSha(path) {
             const encodedPath = this.githubApiPath(path);
             const res = await this.githubRequest(
-                `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}?ref=${encodeURIComponent(this.githubBranch)}`
+                `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}?ref=${encodeURIComponent(this.githubBranch)}&t=${Date.now()}`,
+                { cache: 'no-store' }
             );
             if (res.status === 404) return '';
             if (!res.ok) throw new Error(`SHA fetch failed (${res.status})`);
@@ -611,6 +612,74 @@ document.addEventListener('alpine:init', () => {
             }
             this.syncErrorMessage = '';
             return true;
+        },
+
+        // ── Atomic Git Data API commit (all files in ONE commit) ──────────
+        async atomicGithubCommit(files, message) {
+            // files: [{ path: 'posts.json', content: '...', encoding: 'utf-8' }, { path: 'uploads/img.png', content: 'base64...', encoding: 'base64' }]
+            if (!this.requireAdminConfig()) return false;
+            const owner = encodeURIComponent(this.githubOwner);
+            const repo = encodeURIComponent(this.githubRepo);
+            const branch = encodeURIComponent(this.githubBranch);
+
+            try {
+                // 1. Get latest commit SHA from branch ref
+                const refRes = await this.githubRequest(`/repos/${owner}/${repo}/git/ref/heads/${branch}`);
+                if (!refRes.ok) throw new Error(`Ref fetch failed (${refRes.status})`);
+                const refData = await refRes.json();
+                const latestCommitSha = refData.object.sha;
+
+                // 2. Get tree SHA from that commit
+                const commitRes = await this.githubRequest(`/repos/${owner}/${repo}/git/commits/${latestCommitSha}`);
+                if (!commitRes.ok) throw new Error(`Commit fetch failed (${commitRes.status})`);
+                const commitData = await commitRes.json();
+                const baseTreeSha = commitData.tree.sha;
+
+                // 3. Create blobs for all files in parallel (huge speed gain)
+                const treeItems = await Promise.all(files.map(async (f) => {
+                    const blobRes = await this.githubRequest(`/repos/${owner}/${repo}/git/blobs`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: f.content, encoding: f.encoding || 'utf-8' }),
+                    });
+                    if (!blobRes.ok) throw new Error(`Blob creation failed for ${f.path} (${blobRes.status})`);
+                    const blobData = await blobRes.json();
+                    return { path: f.path, mode: '100644', type: 'blob', sha: blobData.sha };
+                }));
+
+                // 4. Create new tree (inherits unchanged files from base_tree)
+                const treeRes = await this.githubRequest(`/repos/${owner}/${repo}/git/trees`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ base_tree: baseTreeSha, tree: treeItems }),
+                });
+                if (!treeRes.ok) throw new Error(`Tree creation failed (${treeRes.status})`);
+                const treeData = await treeRes.json();
+
+                // 5. Create commit
+                const newCommitRes = await this.githubRequest(`/repos/${owner}/${repo}/git/commits`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, tree: treeData.sha, parents: [latestCommitSha] }),
+                });
+                if (!newCommitRes.ok) throw new Error(`Commit creation failed (${newCommitRes.status})`);
+                const newCommitData = await newCommitRes.json();
+
+                // 6. Update branch ref to point to new commit
+                const updateRes = await this.githubRequest(`/repos/${owner}/${repo}/git/ref/heads/${branch}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sha: newCommitData.sha }),
+                });
+                if (!updateRes.ok) throw new Error(`Ref update failed (${updateRes.status})`);
+
+                this.syncErrorMessage = '';
+                return true;
+            } catch (e) {
+                this.syncErrorMessage = e.message || 'Atomic commit failed';
+                this.showMsg(this.syncErrorMessage, 'error');
+                return false;
+            }
         },
 
         get imageAssetsKey() {
@@ -1218,28 +1287,30 @@ document.addEventListener('alpine:init', () => {
                 this.editor.id = Date.now().toString();
             }
 
-            // ── Upload any pending images now, with progress feedback ──────────
+            // ── Collect pending image files for atomic commit ──────────
             const pendingEntries = Object.entries(this.pendingImageUploads);
+            const imageFiles = [];  // { path, content (base64), encoding, assetId }
+
             if (pendingEntries.length > 0) {
-                let done = 0;
+                if (!silent) this.showMsg(`Preparing ${pendingEntries.length} image(s)...`, 'ok');
                 for (const [assetId, file] of pendingEntries) {
-                    this.showMsg('Uploading image ' + (done + 1) + '/' + pendingEntries.length + '...', 'ok');
                     try {
-                        const uploaded = await this.uploadImageToServer(file, this.editor.id);
-                        this.imageGithubPaths[assetId] = uploaded.url;
-                        this.saveImageGithubPaths();
-                        // Clean up local blob now that GitHub has it
-                        delete this.imageAssets[assetId];
-                        this.saveImageAssets();
+                        const dataUrl = await this.readFileAsDataUrl(file);
+                        const base64 = String(dataUrl || '').split(',')[1] || '';
+                        if (!base64) continue;
+                        const safeName = (file.name || 'image.png').replace(/[^A-Za-z0-9._-]/g, '_');
+                        const storedPath = 'posts/' + this.editor.id + '/images/' + Date.now() + '_' + safeName;
+                        imageFiles.push({ path: storedPath, content: base64, encoding: 'base64', assetId });
+                        // Map asset token → GitHub path so content substitution works
+                        this.imageGithubPaths[assetId] = storedPath;
                     } catch (e) {
-                        // Keep local asset as fallback, leave in pending for next save attempt
-                        console.warn('Image upload failed for', assetId, e);
+                        console.warn('Failed to read image for', assetId, e);
                     }
-                    delete this.pendingImageUploads[assetId];
-                    done++;
                 }
+                this.saveImageGithubPaths();
             }
 
+            // ── Update post in memory ──────────
             const now = new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
             let savedPost;
             if (this.editor.id) {
@@ -1261,8 +1332,37 @@ document.addEventListener('alpine:init', () => {
             this.savePosts();
             this.clearDraft();
 
+            // ── Push to GitHub (atomic commit if images, Contents API otherwise) ──
             if (!silent) this.showMsg('Pushing to GitHub...', 'ok');
-            const synced = savedPost ? await this.syncPostToServer(savedPost) : false;
+
+            let synced = false;
+            if (imageFiles.length > 0) {
+                // Build posts.json with asset: tokens substituted to real GitHub paths
+                const postsForStorage = this.posts.map(p => ({
+                    ...p,
+                    content: this.substituteGithubPaths(p.content),
+                }));
+                const postsContent = JSON.stringify(postsForStorage, null, 4);
+
+                // All files in ONE atomic commit: images + posts.json
+                const allFiles = [
+                    ...imageFiles.map(f => ({ path: f.path, content: f.content, encoding: 'base64' })),
+                    { path: this.githubPostsPath, content: postsContent, encoding: 'utf-8' },
+                ];
+                synced = await this.atomicGithubCommit(allFiles, 'Update post ' + this.editor.id);
+
+                // Clean up local assets on success
+                if (synced) {
+                    for (const f of imageFiles) {
+                        delete this.imageAssets[f.assetId];
+                        delete this.pendingImageUploads[f.assetId];
+                    }
+                    this.saveImageAssets();
+                }
+            } else {
+                synced = savedPost ? await this.syncPostToServer(savedPost) : false;
+            }
+
             if (!silent) {
                 if (synced) {
                     this.showMsg('Saved to GitHub ✓', 'ok');
