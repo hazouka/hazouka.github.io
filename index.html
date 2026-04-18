@@ -241,6 +241,7 @@ document.addEventListener('alpine:init', () => {
     const LEGACY_POSTS_KEY = 're-blog-posts';
     const DRAFT_KEY = 're-blog-draft-v1';
     const GITHUB_SETTINGS_KEY = 're-blog-github-settings-v1';
+    const DELETED_IDS_KEY = 're-blog-deleted-ids-v1';
 
     Alpine.data('blogApp', () => ({
         posts: [],
@@ -773,10 +774,42 @@ document.addEventListener('alpine:init', () => {
         },
 
         mergePosts(localPosts, serverPosts) {
+            const deleted = this.readDeletedIds();
             const map = new Map();
-            (serverPosts || []).forEach((p) => map.set(String(p.id), p));
-            (localPosts || []).forEach((p) => map.set(String(p.id), p));
+            (serverPosts || []).forEach((p) => {
+                if (!deleted.has(String(p.id))) map.set(String(p.id), p);
+            });
+            (localPosts || []).forEach((p) => {
+                if (!deleted.has(String(p.id))) map.set(String(p.id), p);
+            });
             return this.sortPosts(Array.from(map.values()));
+        },
+
+        readDeletedIds() {
+            try {
+                const raw = localStorage.getItem(DELETED_IDS_KEY);
+                if (!raw) return new Set();
+                const parsed = JSON.parse(raw);
+                return new Set(Array.isArray(parsed) ? parsed : []);
+            } catch (e) {
+                return new Set();
+            }
+        },
+
+        addDeletedId(id) {
+            const ids = this.readDeletedIds();
+            ids.add(String(id));
+            localStorage.setItem(DELETED_IDS_KEY, JSON.stringify([...ids]));
+        },
+
+        removeDeletedId(id) {
+            const ids = this.readDeletedIds();
+            ids.delete(String(id));
+            if (ids.size === 0) {
+                localStorage.removeItem(DELETED_IDS_KEY);
+            } else {
+                localStorage.setItem(DELETED_IDS_KEY, JSON.stringify([...ids]));
+            }
         },
 
         async syncPostToServer(post) {
@@ -1208,10 +1241,15 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
             if (!id || !confirm('Delete this entry?')) return;
+            this.addDeletedId(id);
             this.posts = this.posts.filter(p => p.id !== id);
             this.savePosts();
             if (this.editor.id === id) this.clearDraft();
-            await this.deletePostFromServer(id);
+            const synced = await this.deletePostFromServer(id);
+            if (synced) {
+                this.removeDeletedId(id);
+                this.showMsg('Deleted from GitHub ✓', 'ok');
+            }
             this.goHome({ skipDirtyCheck: true });
         },
 
