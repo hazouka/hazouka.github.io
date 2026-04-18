@@ -513,7 +513,7 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify(body),
                 }
             );
-            const retryRes = (res.status === 409)
+            const retryRes = (res.status === 409 || res.status === 422)
                 ? await this.githubRequest(
                     `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
                     {
@@ -571,7 +571,7 @@ document.addEventListener('alpine:init', () => {
                     body: JSON.stringify(body),
                 }
             );
-            const retryRes = (res.status === 409)
+            const retryRes = (res.status === 409 || res.status === 422)
                 ? await this.githubRequest(
                     `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
                     {
