@@ -40,7 +40,7 @@
         <template x-if="view === 'home'">
             <div class="hdr-actions">
                 <input class="search-hdr" type="text" x-model="topicQuery" placeholder="Search entries...">
-                <button class="btn btn-ghost" x-show="!isAdmin" @click="openAdminPage()">Admin Login</button>
+                <!-- Admin login via /vault-9k3p-admin.html directly -->
                 <button class="btn btn-ghost" x-show="isAdmin" @click="logoutAdmin()">Logout</button>
                 <button class="btn btn-primary" x-show="isAdmin" @click="openNewEditor()">
                     <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -254,6 +254,8 @@ document.addEventListener('alpine:init', () => {
         _saveTimer: null,
         _msgTimer: null,
         imageAssets: {},
+        imageGithubPaths: {},  // maps assetId -> github path for substitution on save
+        pendingImageUploads: {},  // assetId -> File object, uploaded on Save
         selectedImageToken: '',
         selectedImageWidth: 100,
         syncErrorMessage: '',
@@ -300,6 +302,7 @@ document.addEventListener('alpine:init', () => {
         async init() {
             marked.setOptions({ breaks: true, gfm: true });
             this.loadImageAssets();
+            this.loadImageGithubPaths();
             this.restoreGithubSettings();
             await this.validateGithubSession();
             this.restoreDraft();
@@ -497,32 +500,34 @@ document.addEventListener('alpine:init', () => {
         async pushFileToGithub(path, contentText, commitMessage) {
             if (!this.requireAdminConfig()) return false;
             const encodedPath = this.githubApiPath(path);
-            const sha = await this.getFileSha(path);
-            const body = {
-                message: commitMessage,
-                content: this.toBase64Utf8(contentText),
-                branch: this.githubBranch,
-            };
-            if (sha) body.sha = sha;
+            const encodedContent = this.toBase64Utf8(contentText);
 
-            const res = await this.githubRequest(
-                `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
-                {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                }
-            );
-            const retryRes = (res.status === 409 || res.status === 422)
-                ? await this.githubRequest(
+            // Retry loop: on SHA mismatch (409/422) re-fetch fresh SHA and retry up to 3 times
+            let retryRes;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const sha = await this.getFileSha(path);
+                const body = {
+                    message: commitMessage,
+                    content: encodedContent,
+                    branch: this.githubBranch,
+                };
+                if (sha) body.sha = sha;
+                const res = await this.githubRequest(
                     `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
                     {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...body, sha: await this.getFileSha(path) }),
+                        body: JSON.stringify(body),
                     }
-                )
-                : res;
+                );
+                if (res.status !== 409 && res.status !== 422) {
+                    retryRes = res;
+                    break;
+                }
+                retryRes = res;
+                // Small delay before retry to let GitHub settle
+                await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+            }
 
             if (retryRes.status === 401) {
                 this.syncErrorMessage = 'GitHub token rejected. Re-login on secret admin page.';
@@ -555,32 +560,29 @@ document.addEventListener('alpine:init', () => {
         async pushBase64FileToGithub(path, base64Content, commitMessage) {
             if (!this.requireAdminConfig()) return false;
             const encodedPath = this.githubApiPath(path);
-            const sha = await this.getFileSha(path);
-            const body = {
-                message: commitMessage,
-                content: base64Content,
-                branch: this.githubBranch,
-            };
-            if (sha) body.sha = sha;
 
-            const res = await this.githubRequest(
-                `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
-                {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body),
-                }
-            );
-            const retryRes = (res.status === 409 || res.status === 422)
-                ? await this.githubRequest(
+            // Same retry loop as pushFileToGithub — fresh SHA on every attempt
+            let retryRes;
+            for (let attempt = 0; attempt < 3; attempt++) {
+                const sha = await this.getFileSha(path);
+                const body = {
+                    message: commitMessage,
+                    content: base64Content,
+                    branch: this.githubBranch,
+                };
+                if (sha) body.sha = sha;
+                const res = await this.githubRequest(
                     `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
                     {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ ...body, sha: await this.getFileSha(path) }),
+                        body: JSON.stringify(body),
                     }
-                )
-                : res;
+                );
+                if (res.status !== 409 && res.status !== 422) { retryRes = res; break; }
+                retryRes = res;
+                await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
+            }
 
             if (retryRes.status === 401) {
                 this.syncErrorMessage = 'GitHub token rejected. Re-login on secret admin page.';
@@ -626,6 +628,29 @@ document.addEventListener('alpine:init', () => {
 
         saveImageAssets() {
             localStorage.setItem(this.imageAssetsKey, JSON.stringify(this.imageAssets));
+        },
+
+        get imageGithubPathsKey() { return 're-blog-image-github-paths-v1'; },
+
+        loadImageGithubPaths() {
+            try {
+                const raw = localStorage.getItem(this.imageGithubPathsKey) || '{}';
+                const parsed = JSON.parse(raw);
+                this.imageGithubPaths = parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (e) {
+                this.imageGithubPaths = {};
+            }
+        },
+
+        saveImageGithubPaths() {
+            localStorage.setItem(this.imageGithubPathsKey, JSON.stringify(this.imageGithubPaths));
+        },
+
+        // Substitute asset: tokens with real GitHub paths for storage in posts.json
+        substituteGithubPaths(content) {
+            return (content || '').replace(/asset:([a-z0-9_]+)/g, (match, assetId) => {
+                return this.imageGithubPaths[assetId] ? this.imageGithubPaths[assetId] : match;
+            });
         },
 
         normalizeLang(lang) {
@@ -760,8 +785,13 @@ document.addEventListener('alpine:init', () => {
                     this.syncErrorMessage = 'Admin login required. Open /vault-9k3p-admin.html first.';
                     return false;
                 }
-                const content = JSON.stringify(this.posts, null, 4);
-                const message = post?.id ? `Update post ${post.id}` : 'Update blog posts';
+                // Substitute asset: tokens with real GitHub paths before saving
+                const postsForStorage = this.posts.map(p => ({
+                    ...p,
+                    content: this.substituteGithubPaths(p.content),
+                }));
+                const content = JSON.stringify(postsForStorage, null, 4);
+                const message = post && post.id ? 'Update post ' + post.id : 'Update blog posts';
                 return await this.pushFileToGithub(this.githubPostsPath, content, message);
             } catch (e) {
                 this.syncErrorMessage = 'Failed to sync posts to GitHub';
@@ -776,8 +806,12 @@ document.addEventListener('alpine:init', () => {
                     this.syncErrorMessage = 'Admin login required. Open /vault-9k3p-admin.html first.';
                     return false;
                 }
-                // Update posts.json to remove the post
-                const postsContent = JSON.stringify(this.posts, null, 4);
+                // Update posts.json to remove the post (substitute asset: with github paths)
+                const postsForStorage = this.posts.map(p => ({
+                    ...p,
+                    content: this.substituteGithubPaths(p.content),
+                }));
+                const postsContent = JSON.stringify(postsForStorage, null, 4);
                 const jsonOk = await this.pushFileToGithub(this.githubPostsPath, postsContent, 'Delete post ' + id);
 
                 // Also delete the post's image folder from GitHub
@@ -898,30 +932,18 @@ document.addEventListener('alpine:init', () => {
 
             const alt = file.name ? file.name.replace(/\.[^.]+$/, '') : '';
 
-            // 1. Show image instantly via local asset so preview works immediately
+            // Store locally as asset — preview works instantly and never breaks
             const assetId = 'img_' + Date.now();
             const dataUrl = await this.readFileAsDataUrl(file);
             this.imageAssets[assetId] = dataUrl;
             this.saveImageAssets();
-            const placeholderToken = this.createImageToken('asset:' + assetId, alt, 100);
-            this.insertAtCursor('\n' + placeholderToken + '\n');
-            this.showMsg('Uploading image...', 'ok');
 
-            // 2. Upload to GitHub in background, then swap token to real path
-            try {
-                const uploaded = await this.uploadImageToServer(file);
-                const realToken = this.createImageToken(uploaded.url, alt, 100);
-                this.editor.content = this.editor.content.replace(placeholderToken, realToken);
-                // Clean up local asset now that we have the GitHub URL
-                delete this.imageAssets[assetId];
-                this.saveImageAssets();
-                this.markDirty();
-                this.queueDraftSave();
-                this.showMsg('Image uploaded to GitHub', 'ok');
-            } catch (e) {
-                // Keep local asset as permanent fallback if upload fails
-                this.showMsg('Image embedded locally (upload failed)', 'ok');
-            }
+            // Queue file for upload on Save
+            this.pendingImageUploads[assetId] = file;
+
+            const token = this.createImageToken('asset:' + assetId, alt, 100);
+            this.insertAtCursor('\n' + token + '\n');
+            this.showMsg('Image added — will upload on Save', 'ok');
         },
 
         async handleImageUpload(event) {
@@ -1118,6 +1140,34 @@ document.addEventListener('alpine:init', () => {
                 if (!silent) this.showMsg('Nothing to save.','error');
                 return;
             }
+
+            // Assign post ID now so image folder path is stable
+            if (!this.editor.id) {
+                this.editor.id = Date.now().toString();
+            }
+
+            // ── Upload any pending images now, with progress feedback ──────────
+            const pendingEntries = Object.entries(this.pendingImageUploads);
+            if (pendingEntries.length > 0) {
+                let done = 0;
+                for (const [assetId, file] of pendingEntries) {
+                    this.showMsg('Uploading image ' + (done + 1) + '/' + pendingEntries.length + '...', 'ok');
+                    try {
+                        const uploaded = await this.uploadImageToServer(file, this.editor.id);
+                        this.imageGithubPaths[assetId] = uploaded.url;
+                        this.saveImageGithubPaths();
+                        // Clean up local blob now that GitHub has it
+                        delete this.imageAssets[assetId];
+                        this.saveImageAssets();
+                    } catch (e) {
+                        // Keep local asset as fallback, leave in pending for next save attempt
+                        console.warn('Image upload failed for', assetId, e);
+                    }
+                    delete this.pendingImageUploads[assetId];
+                    done++;
+                }
+            }
+
             const now = new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
             let savedPost;
             if (this.editor.id) {
@@ -1130,19 +1180,22 @@ document.addEventListener('alpine:init', () => {
                     this.posts.unshift(savedPost);
                 }
             } else {
-                const p = { id: Date.now().toString(), title: this.editor.title||'Untitled', content: this.editor.content, date: now };
-                this.posts.unshift(p); this.editor.id = p.id;
+                const p = { id: this.editor.id, title: this.editor.title||'Untitled', content: this.editor.content, date: now };
+                this.posts.unshift(p);
                 savedPost = p;
             }
+
             this.editor.isDirty = false;
             this.savePosts();
             this.clearDraft();
+
+            if (!silent) this.showMsg('Pushing to GitHub...', 'ok');
             const synced = savedPost ? await this.syncPostToServer(savedPost) : false;
             if (!silent) {
                 if (synced) {
-                    this.showMsg('Saved to GitHub', 'ok');
+                    this.showMsg('Saved to GitHub ✓', 'ok');
                 } else if (this.syncErrorMessage) {
-                    this.showMsg(`${this.syncErrorMessage} (saved locally)`, 'error');
+                    this.showMsg(this.syncErrorMessage + ' (saved locally)', 'error');
                 } else {
                     this.showMsg('Saved locally', 'ok');
                 }
