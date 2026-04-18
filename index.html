@@ -1029,23 +1029,83 @@ document.addEventListener('alpine:init', () => {
             this.queueDraftSave();
         },
 
+        compressImage(file, maxWidth = 1920, quality = 0.80) {
+            return new Promise((resolve) => {
+                // Skip non-raster formats
+                if (!file.type || file.type === 'image/svg+xml' || file.type === 'image/gif') {
+                    resolve(file);
+                    return;
+                }
+
+                const img = new Image();
+                img.onload = () => {
+                    let w = img.naturalWidth, h = img.naturalHeight;
+
+                    // Scale down large images
+                    if (w > maxWidth) {
+                        h = Math.round(h * (maxWidth / w));
+                        w = maxWidth;
+                    }
+
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, w, h);
+
+                    // Try WebP first (best compression), fall back to JPEG
+                    const tryFormat = (fmt, q) => {
+                        canvas.toBlob((blob) => {
+                            if (!blob || blob.size >= file.size) {
+                                // Compression didn't help, use original
+                                if (fmt === 'image/webp') {
+                                    tryFormat('image/jpeg', q);
+                                    return;
+                                }
+                                resolve(file);
+                                return;
+                            }
+                            const ext = blob.type === 'image/webp' ? '.webp' : '.jpg';
+                            const name = (file.name || 'image').replace(/\.[^.]+$/, '') + ext;
+                            resolve(new File([blob], name, { type: blob.type }));
+                        }, fmt, q);
+                    };
+                    tryFormat('image/webp', quality);
+
+                    URL.revokeObjectURL(img.src);
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(img.src);
+                    resolve(file); // fallback to original
+                };
+                img.src = URL.createObjectURL(file);
+            });
+        },
+
         async insertImageMarkdown(file) {
             if (!file || !file.type || !file.type.startsWith('image/')) return;
 
             const alt = file.name ? file.name.replace(/\.[^.]+$/, '') : '';
 
+            // Compress image for faster upload and smaller storage
+            const compressed = await this.compressImage(file);
+
             // Store locally as asset — preview works instantly and never breaks
             const assetId = 'img_' + Date.now();
-            const dataUrl = await this.readFileAsDataUrl(file);
+            const dataUrl = await this.readFileAsDataUrl(compressed);
             this.imageAssets[assetId] = dataUrl;
             this.saveImageAssets();
 
-            // Queue file for upload on Save
-            this.pendingImageUploads[assetId] = file;
+            // Queue compressed file for upload on Save
+            this.pendingImageUploads[assetId] = compressed;
 
             const token = this.createImageToken('asset:' + assetId, alt, 100);
             this.insertAtCursor('\n' + token + '\n');
-            this.showMsg('Image added — will upload on Save', 'ok');
+
+            const savedKB = file.size > compressed.size
+                ? ` (${Math.round(file.size/1024)}KB → ${Math.round(compressed.size/1024)}KB)`
+                : '';
+            this.showMsg('Image added' + savedKB + ' — will upload on Save', 'ok');
         },
 
         async handleImageUpload(event) {
