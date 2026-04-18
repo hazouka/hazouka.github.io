@@ -393,6 +393,15 @@ document.addEventListener('alpine:init', () => {
             return response;
         },
 
+        async readGithubErrorMessage(response) {
+            try {
+                const payload = await response.json();
+                return payload?.message ? String(payload.message) : '';
+            } catch (e) {
+                return '';
+            }
+        },
+
         toBase64Utf8(value) {
             return btoa(unescape(encodeURIComponent(value)));
         },
@@ -428,9 +437,19 @@ document.addEventListener('alpine:init', () => {
                 }
             );
 
-            if (res.status === 401 || res.status === 403) {
+            if (res.status === 401) {
                 this.clearAdminSession();
                 this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
+                return false;
+            }
+            if (res.status === 403) {
+                const reason = await this.readGithubErrorMessage(res);
+                if (/bad credentials|expired/i.test(reason)) {
+                    this.clearAdminSession();
+                    this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
+                    return false;
+                }
+                this.showMsg(reason ? `GitHub denied write: ${reason}` : 'GitHub denied write (403). Check token permissions.', 'error');
                 return false;
             }
             if (!res.ok) {
@@ -460,9 +479,19 @@ document.addEventListener('alpine:init', () => {
                 }
             );
 
-            if (res.status === 401 || res.status === 403) {
+            if (res.status === 401) {
                 this.clearAdminSession();
                 this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
+                return false;
+            }
+            if (res.status === 403) {
+                const reason = await this.readGithubErrorMessage(res);
+                if (/bad credentials|expired/i.test(reason)) {
+                    this.clearAdminSession();
+                    this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
+                    return false;
+                }
+                this.showMsg(reason ? `GitHub denied upload: ${reason}` : 'GitHub denied upload (403). Check token permissions.', 'error');
                 return false;
             }
             if (!res.ok) {

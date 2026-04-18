@@ -813,3 +813,121 @@ kbd {
     background: rgba(249,226,175,0.16); color: var(--d-yellow);
     border-radius: 2px; padding: 0.1em 0.28em;
 }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .reading-layout {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .reading-toc {
+        position: static;
+    }
+
+    .editor-panes {
+        grid-template-columns: 1fr;
+    }
+
+    .pane {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .pane:last-child {
+        border-bottom: none;
+    }
+}
+
+@media (max-width: 700px) {
+    :root { --header-h: 58px; }
+
+    body {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    .site-header {
+        padding: 0.55rem 0.75rem;
+        height: auto;
+        min-height: var(--header-h);
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        align-items: center;
+    }
+
+    .header-left,
+    .header-right {
+        width: 100%;
+    }
+
+    .hdr-actions {
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.2rem;
+    }
+
+    .search-hdr {
+        width: 100%;
+    }
+
+    .bc-title {
+        max-width: 160px;
+    }
+
+    .home-wrap {
+        padding: 2rem 1rem 3rem;
+    }
+
+    .hero-title {
+        font-size: 2rem;
+    }
+
+    .reading-layout {
+        padding: 1.4rem 1rem 2.6rem;
+    }
+
+    .reading-title {
+        font-size: 1.8rem;
+        margin-bottom: 1.4rem;
+        padding-bottom: 0.9rem;
+    }
+
+    .editor-titlebar {
+        padding: 0.75rem 0.9rem 0.65rem;
+    }
+
+    .title-input {
+        font-size: 1.25rem;
+    }
+
+    .toolbar {
+        padding: 0.4rem 0.55rem;
+    }
+
+    .pane-bar {
+        padding: 0.38rem 0.8rem;
+    }
+
+    .editor-ta {
+        padding: 0.9rem 0.9rem 1rem;
+        font-size: 0.79rem;
+        line-height: 1.7;
+    }
+
+    .pane-scroll {
+        padding: 1rem 0.9rem 1.2rem;
+    }
+
+    .markdown-body {
+        font-size: 1rem;
+        line-height: 1.65;
+    }
+
+    .markdown-body h1 { font-size: 1.55rem; }
+    .markdown-body h2 { font-size: 1.25rem; }
+    .markdown-body h3 { font-size: 1.06rem; }
+}
