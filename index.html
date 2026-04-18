@@ -1342,7 +1342,12 @@ document.addEventListener('alpine:init', () => {
         buildPostUrl(postId) {
             const url = new URL(window.location.href);
             if (postId) {
-                url.searchParams.set('post', String(postId));
+                const post = this.posts.find(p => String(p.id) === String(postId));
+                if (post && post.title) {
+                    url.searchParams.set('post', this.slugify(post.title));
+                } else {
+                    url.searchParams.set('post', String(postId));
+                }
             } else {
                 url.searchParams.delete('post');
             }
@@ -1356,10 +1361,17 @@ document.addEventListener('alpine:init', () => {
 
         openPostFromUrl() {
             const url = new URL(window.location.href);
-            const postId = url.searchParams.get('post');
-            if (!postId) return;
-            const post = this.posts.find((p) => String(p.id) === String(postId));
+            const postIdOrSlug = url.searchParams.get('post');
+            if (!postIdOrSlug) return;
+            
+            // 1. Try exact ID match
+            let post = this.posts.find((p) => String(p.id) === String(postIdOrSlug));
+            // 2. Try slug match
+            if (!post) {
+                post = this.posts.find((p) => this.slugify(p.title) === postIdOrSlug);
+            }
             if (!post) return;
+
             this.reading = { ...post };
             this.view = 'reading';
             this.focusMode = false;
