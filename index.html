@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RE Blog</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/x86asm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/armasm.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/cpp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/rust.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/powershell.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body x-data="blogApp" @keydown.window="handleShortcut($event)">
+
+<!-- ═══════════════════════ HEADER ═══════════════════════ -->
+<header class="site-header">
+    <div class="header-left">
+        <button class="site-logo" @click="goHome()">
+            <span class="logo-caret">›</span>re-blog
+        </button>
+        <template x-if="view !== 'home'">
+            <div class="breadcrumb">
+                <span class="bc-sep">/</span>
+                <span class="bc-title" x-text="view === 'editor' ? (editor.title || 'new entry') : (reading.title || 'entry')"></span>
+                <span class="bc-dirty" x-show="view === 'editor' && editor.isDirty" title="Unsaved changes">●</span>
+            </div>
+        </template>
+    </div>
+
+    <div class="header-right">
+        <!-- HOME -->
+        <template x-if="view === 'home'">
+            <div class="hdr-actions">
+                <input class="search-hdr" type="text" x-model="topicQuery" placeholder="Search entries...">
+                <button class="btn btn-ghost" x-show="isAdmin" @click="logoutAdmin()">Logout</button>
+                <button class="btn btn-primary" x-show="isAdmin" @click="openNewEditor()">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                    New Entry
+                </button>
+            </div>
+        </template>
+
+        <!-- EDITOR -->
+        <template x-if="view === 'editor'">
+            <div class="hdr-actions">
+                <span class="save-status" x-show="saveMessage" :class="saveMessageType === 'error' ? 'save-err' : 'save-ok'" x-text="saveMessage"></span>
+                <template x-if="selectedImageToken">
+                    <div class="img-resize-chip">
+                        <span>Image</span>
+                        <input type="range" min="25" max="100" step="5" :value="selectedImageWidth" @input="updateSelectedImageWidth($event.target.value)">
+                        <span x-text="selectedImageWidth + '%'"></span>
+                        <button class="chip-close" @click="clearSelectedImageToken()">x</button>
+                    </div>
+                </template>
+                <button class="btn btn-ghost" @click="focusMode = !focusMode" :class="focusMode ? 'btn-ghost-on' : ''" title="Ctrl+Shift+P">Focus</button>
+                <button class="btn btn-ghost" @click="$refs.imageUploadInput.click()">Upload Image</button>
+                <button class="btn btn-ghost" @click="downloadMarkdown()">Export .md</button>
+                <button class="btn btn-ghost-danger" @click="deletePost(editor.id)" :disabled="!editor.id">Delete</button>
+                <button class="btn btn-primary" @click="savePost()">Save</button>
+            </div>
+        </template>
+
+        <!-- READING -->
+        <template x-if="view === 'reading'">
+            <div class="hdr-actions">
+                <button class="btn btn-ghost" @click="copyReadingLink()">Copy Link</button>
+                <button class="btn btn-ghost" x-show="isAdmin" @click="openEditor(reading)">Edit</button>
+                <button class="btn btn-ghost-danger" x-show="isAdmin" @click="deletePost(reading.id)">Delete</button>
+            </div>
+        </template>
+    </div>
+</header>
+
+<!-- ═══════════════════════ HOME VIEW ═══════════════════════ -->
+<main class="view" x-show="view === 'home'">
+    <div class="home-wrap">
+        <div class="home-hero">
+            <span class="hero-tag">// reverse engineering</span>
+            <h1 class="hero-title">Research Notes</h1>
+            <p class="hero-desc">A personal notebook for low-level systems, binary analysis,<br>Windows internals, and tooling.</p>
+        </div>
+
+        <template x-if="posts.length === 0">
+            <div class="home-empty">
+                <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><rect x="9" y="6" width="26" height="32" rx="2.5" stroke="var(--border-hi)" stroke-width="1.5"/><path d="M15 16h14M15 21.5h14M15 27h9" stroke="var(--text-mute)" stroke-width="1.5" stroke-linecap="round"/></svg>
+                <p>No entries yet.</p>
+                <button class="btn btn-primary" x-show="isAdmin" @click="openNewEditor()">Write your first entry</button>
+            </div>
+        </template>
+
+        <div class="posts-grid" x-show="posts.length > 0">
+            <template x-if="filteredPosts.length === 0 && topicQuery">
+                <p class="no-results">No results for "<span x-text="topicQuery"></span>"</p>
+            </template>
+            <template x-for="post in filteredPosts" :key="post.id">
+                <article class="post-card" @click="openReading(post)">
+                    <div class="post-card-meta">
+                        <span x-text="post.date"></span>
+                        <span x-text="countWords(post.content) + ' words'"></span>
+                    </div>
+                    <h2 class="post-card-title" x-text="post.title || 'Untitled'"></h2>
+                    <p class="post-card-excerpt" x-text="getExcerpt(post.content)"></p>
+                    <div class="post-card-footer">
+                        <span class="post-read-link">Read →</span>
+                        <button class="post-edit-btn" x-show="isAdmin" @click.stop="openEditor(post)">
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M7.5 1.5l2 2-5.5 5.5H2v-2l5.5-5.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+                            Edit
+                        </button>
+                    </div>
+                </article>
+            </template>
+        </div>
+    </div>
+</main>
+
+<!-- ═══════════════════════ READING VIEW ═══════════════════════ -->
+<div class="view" x-show="view === 'reading'">
+    <div class="reading-layout">
+        <article class="reading-article">
+            <div class="reading-meta">
+                <span x-text="reading.date"></span>
+                <span>·</span>
+                <span x-text="Math.max(1, Math.round(countWords(reading.content)/200)) + ' min read'"></span>
+            </div>
+            <h1 class="reading-title" x-text="reading.title || 'Untitled'"></h1>
+            <div class="markdown-body" x-ref="readingBody" x-html="renderMarkdown(reading.content || '')"></div>
+        </article>
+        <aside class="reading-toc" x-show="readingToc.length > 0">
+            <div class="toc-section-label">On this page</div>
+            <template x-for="item in readingToc" :key="item.id">
+                <button class="toc-item" @click="jumpReadingHeading(item.id)"
+                    :style="`padding-left: calc(0.6rem + ${(item.level-1)*10}px)`"
+                    x-text="item.text">
+                </button>
+            </template>
+        </aside>
+    </div>
+</div>
+
+<!-- ═══════════════════════ EDITOR VIEW ═══════════════════════ -->
+<div class="view view-editor-wrap" x-show="view === 'editor'">
+
+    <div class="editor-titlebar" x-show="!focusMode">
+        <input class="title-input" type="text" x-model="editor.title"
+            @input="markDirty(); queueDraftSave()" placeholder="Entry title...">
+    </div>
+
+    <div class="toolbar" x-show="!focusMode">
+        <div class="tb-group">
+            <button class="tb-btn" @click="insertHeading(2)"># H2</button>
+            <button class="tb-btn" @click="insertHeading(3)">## H3</button>
+        </div>
+        <div class="tb-sep"></div>
+        <div class="tb-group">
+            <button class="tb-btn tb-b" @click="insertBold()">B</button>
+            <button class="tb-btn tb-i" @click="insertItalic()">I</button>
+            <button class="tb-btn" @click="insertInlineCode()">`&thinsp;`</button>
+        </div>
+        <div class="tb-sep"></div>
+        <div class="tb-group">
+            <button class="tb-btn tb-lang" @click="insertCodeBlock('c')">C</button>
+            <button class="tb-btn tb-lang" @click="insertCodeBlock('cpp')">C++</button>
+            <button class="tb-btn tb-lang" @click="insertCodeBlock('asm')">ASM</button>
+            <button class="tb-btn tb-lang" @click="insertCodeBlock('python')">PY</button>
+            <button class="tb-btn tb-lang" @click="insertCodeBlock('rust')">RS</button>
+        </div>
+        <div class="tb-sep"></div>
+        <div class="tb-group">
+            <button class="tb-btn" @click="insertQuote()">Quote</button>
+            <button class="tb-btn" @click="insertList()">List</button>
+            <button class="tb-btn" @click="insertLink()">Link</button>
+            <button class="tb-btn" @click="insertTable()">Table</button>
+            <button class="tb-btn" @click="$refs.imageUploadInput.click()">Image</button>
+        </div>
+        <div class="tb-spacer"></div>
+        <div class="tb-hints">
+            <kbd>Ctrl+S</kbd> save &nbsp;·&nbsp; <kbd>Ctrl+V</kbd> paste image &nbsp;·&nbsp; click preview image to resize &nbsp;·&nbsp; <kbd>Esc</kbd> exit focus
+        </div>
+    </div>
+
+    <div class="editor-panes" :class="focusMode ? 'focus-mode' : ''">
+        <!-- Write -->
+        <div class="pane pane-write">
+            <div class="pane-bar" x-show="!focusMode">
+                <span class="pane-label">Write</span>
+                <span class="pane-stat" x-text="wordCount + ' words · ' + readingTime + ' min read'"></span>
+            </div>
+            <textarea class="editor-ta" x-ref="editorTextarea"
+                x-model="editor.content"
+                @paste="handleEditorPaste($event)"
+                @input="markDirty(); queueDraftSave()"
+                placeholder="# Intro&#10;&#10;Write in Markdown...&#10;&#10;[[image:uploads/example.png|alt=|width=70]]&#10;&#10;```c&#10;int main() { return 0; }&#10;```">
+            </textarea>
+        </div>
+
+        <!-- Preview -->
+        <div class="pane pane-preview" x-show="!focusMode">
+            <div class="pane-bar">
+                <span class="pane-label">Preview</span>
+            </div>
+            <div class="pane-scroll">
+                <div class="markdown-body preview-md" x-ref="previewPane" @click="handlePreviewClick($event)"
+                    x-html="renderMarkdown(editor.content || emptyPreviewContent)">
+                </div>
+            </div>
+        </div>
+
+        <!-- TOC -->
+        <div class="pane pane-toc" x-show="!focusMode">
+            <div class="pane-bar">
+                <span class="pane-label">Contents</span>
+            </div>
+            <div class="pane-scroll">
+                <template x-for="item in tocItems" :key="item.id">
+                    <button class="toc-item" @click="jumpEditorHeading(item.id)"
+                        :style="`padding-left: calc(0.6rem + ${(item.level-1)*10}px)`"
+                        x-text="item.text">
+                    </button>
+                </template>
+                <p class="toc-empty" x-show="tocItems.length === 0">Add headings to build a table of contents.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<input type="file" x-ref="imageUploadInput" @change="handleImageUpload($event)" accept="image/*" hidden>
+
+<!-- ═══════════════════════ SCRIPT ═══════════════════════ -->
+<script>
+document.addEventListener('alpine:init', () => {
+    const POSTS_KEY = 're-blog-posts-v1';
+    const LEGACY_POSTS_KEY = 're-blog-posts';
+    const DRAFT_KEY = 're-blog-draft-v1';
+    const GITHUB_SETTINGS_KEY = 're-blog-github-settings-v1';
+
+    Alpine.data('blogApp', () => ({
+        posts: [],
+        view: 'home',
+        editor: { id: null, title: '', content: '', isDirty: false },
+        reading: { id: null, title: '', content: '', date: '' },
+        topicQuery: '',
+        focusMode: false,
+        saveMessage: '',
+        saveMessageType: 'ok',
+        _saveTimer: null,
+        _msgTimer: null,
+        imageAssets: {},
+        selectedImageToken: '',
+        selectedImageWidth: 100,
+        githubToken: '',
+        githubOwner: '',
+        githubRepo: '',
+        githubBranch: 'main',
+        githubPostsPath: 'posts.json',
+        githubUploadsDir: 'uploads',
+
+        emptyPreviewContent: `# Preview\n\nStart writing on the left.\n\n[[image:uploads/example.png|alt=|width=70]]\n\n\`\`\`c\nHANDLE hProc = OpenProcess(\n    PROCESS_ALL_ACCESS, FALSE, pid);\n\`\`\`\n\n\`\`\`asm\nmov  rax, [rbp - 0x18]\nxor  eax, eax\nret\n\`\`\`\n\nInline: \`NTSTATUS\`, \`0xDEADBEEF\`\n`,
+
+        get filteredPosts() {
+            const q = this.topicQuery.toLowerCase().trim();
+            if (!q) return this.posts;
+            return this.posts.filter(p => p.title.toLowerCase().includes(q) || p.content.toLowerCase().includes(q));
+        },
+
+        get wordCount() { return this.countWords(this.editor.content); },
+        get readingTime() { return Math.max(1, Math.round(this.wordCount / 200)); },
+        get isAdmin() { return !!this.githubToken; },
+
+        get tocItems()   { return this._toc(this.editor.content); },
+        get readingToc() { return this._toc(this.reading.content || ''); },
+
+        _toc(content) {
+            const items = [];
+            const seen = {};
+            const re = /^(#{1,4})\s+(.+)$/gm;
+            let m;
+            while ((m = re.exec(content)) !== null) {
+                const text = m[2]
+                    .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+                    .replace(/[*_`~]/g, '')
+                    .trim();
+                const base = this.slugify(text) || 'section';
+                seen[base] = (seen[base] || 0) + 1;
+                const id = `h-${base}${seen[base] > 1 ? '-' + seen[base] : ''}`;
+                items.push({ level: m[1].length, text, id });
+            }
+            return items;
+        },
+
+        async init() {
+            marked.setOptions({ breaks: true, gfm: true });
+            this.loadImageAssets();
+            this.restoreGithubSettings();
+            this.restoreDraft();
+            await this.loadPosts();
+            this.openPostFromUrl();
+        },
+
+        inferGithubDefaults() {
+            const host = window.location.hostname || '';
+            const pathParts = window.location.pathname.split('/').filter(Boolean);
+
+            if (host.endsWith('.github.io')) {
+                const owner = host.split('.')[0] || '';
+                const repo = pathParts[0] || `${owner}.github.io`;
+                return { owner, repo };
+            }
+
+            return {
+                owner: pathParts[0] || '',
+                repo: pathParts[1] || '',
+            };
+        },
+
+        restoreGithubSettings() {
+            const defaults = this.inferGithubDefaults();
+            let parsed = {};
+            try {
+                parsed = JSON.parse(localStorage.getItem(GITHUB_SETTINGS_KEY) || '{}') || {};
+            } catch (e) {
+                parsed = {};
+            }
+
+            this.githubToken = parsed.token || '';
+            this.githubOwner = parsed.owner || defaults.owner || '';
+            this.githubRepo = parsed.repo || defaults.repo || '';
+            this.githubBranch = parsed.branch || 'main';
+            this.githubPostsPath = parsed.postsPath || 'posts.json';
+            this.githubUploadsDir = parsed.uploadsDir || 'uploads';
+        },
+
+        saveGithubSettings() {
+            const payload = {
+                token: this.githubToken,
+                owner: this.githubOwner,
+                repo: this.githubRepo,
+                branch: this.githubBranch,
+                postsPath: this.githubPostsPath,
+                uploadsDir: this.githubUploadsDir,
+            };
+            localStorage.setItem(GITHUB_SETTINGS_KEY, JSON.stringify(payload));
+        },
+
+        clearAdminSession() {
+            this.githubToken = '';
+            this.saveGithubSettings();
+            if (this.view === 'editor') this.goHome({ skipDirtyCheck: true });
+        },
+
+        logoutAdmin() {
+            this.clearAdminSession();
+            this.showMsg('Admin session cleared', 'ok');
+        },
+
+        requireAdminConfig() {
+            if (!this.isAdmin) {
+                this.showMsg('Open /vault-9k3p-admin.html first', 'error');
+                return false;
+            }
+            if (!this.githubOwner || !this.githubRepo) {
+                this.showMsg('Missing GitHub owner/repo in admin settings', 'error');
+                return false;
+            }
+            return true;
+        },
+
+        githubApiPath(path) {
+            const cleaned = String(path || '').replace(/^\/+/, '');
+            return cleaned.split('/').map(encodeURIComponent).join('/');
+        },
+
+        async githubRequest(path, options = {}) {
+            const method = options.method || 'GET';
+            const headers = {
+                Accept: 'application/vnd.github+json',
+                Authorization: `Bearer ${this.githubToken}`,
+                'X-GitHub-Api-Version': '2022-11-28',
+                ...(options.headers || {}),
+            };
+            const response = await fetch(`https://api.github.com${path}`, {
+                method,
+                headers,
+                body: options.body,
+            });
+            return response;
+        },
+
+        toBase64Utf8(value) {
+            return btoa(unescape(encodeURIComponent(value)));
+        },
+
+        async getFileSha(path) {
+            const encodedPath = this.githubApiPath(path);
+            const res = await this.githubRequest(
+                `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}?ref=${encodeURIComponent(this.githubBranch)}`
+            );
+            if (res.status === 404) return '';
+            if (!res.ok) throw new Error(`SHA fetch failed (${res.status})`);
+            const payload = await res.json();
+            return payload.sha || '';
+        },
+
+        async pushFileToGithub(path, contentText, commitMessage) {
+            if (!this.requireAdminConfig()) return false;
+            const encodedPath = this.githubApiPath(path);
+            const sha = await this.getFileSha(path);
+            const body = {
+                message: commitMessage,
+                content: this.toBase64Utf8(contentText),
+                branch: this.githubBranch,
+            };
+            if (sha) body.sha = sha;
+
+            const res = await this.githubRequest(
+                `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                }
+            );
+
+            if (res.status === 401 || res.status === 403) {
+                this.clearAdminSession();
+                this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
+                return false;
+            }
+            if (!res.ok) {
+                this.showMsg(`GitHub save failed (${res.status})`, 'error');
+                return false;
+            }
+            return true;
+        },
+
+        async pushBase64FileToGithub(path, base64Content, commitMessage) {
+            if (!this.requireAdminConfig()) return false;
+            const encodedPath = this.githubApiPath(path);
+            const sha = await this.getFileSha(path);
+            const body = {
+                message: commitMessage,
+                content: base64Content,
+                branch: this.githubBranch,
+            };
+            if (sha) body.sha = sha;
+
+            const res = await this.githubRequest(
+                `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/contents/${encodedPath}`,
+                {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                }
+            );
+
+            if (res.status === 401 || res.status === 403) {
+                this.clearAdminSession();
+                this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
+                return false;
+            }
+            if (!res.ok) {
+                this.showMsg(`GitHub upload failed (${res.status})`, 'error');
+                return false;
+            }
+            return true;
+        },
+
+        get imageAssetsKey() {
+            return 're-blog-image-assets-v1';
+        },
+
+        loadImageAssets() {
+            try {
+                const raw = localStorage.getItem(this.imageAssetsKey) || '{}';
+                const parsed = JSON.parse(raw);
+                this.imageAssets = parsed && typeof parsed === 'object' ? parsed : {};
+            } catch (e) {
+                this.imageAssets = {};
+            }
+        },
+
+        saveImageAssets() {
+            localStorage.setItem(this.imageAssetsKey, JSON.stringify(this.imageAssets));
+        },
+
+        normalizeLang(lang) {
+            const l = (lang || '').toLowerCase();
+            if (l === 'asm' || l === 'assembly') return 'x86asm';
+            if (l === 'ps1') return 'powershell';
+            return l;
+        },
+
+        slugify(text) {
+            return (text || '')
+                .toLowerCase()
+                .replace(/[^\w\s-]/g, '')
+                .trim()
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-');
+        },
+
+        createImageToken(source, alt, width = 100) {
+            const safeAlt = String(alt || '').replace(/[|\]]/g, '-');
+            const safeWidth = Math.max(25, Math.min(100, Number(width) || 100));
+            return `[[image:${source}|alt=${safeAlt}|width=${safeWidth}]]`;
+        },
+
+        parseImageToken(token) {
+            const match = /^\[\[image:(.+?)\|alt=(.*?)\|width=(\d{1,3})\]\]$/.exec((token || '').trim());
+            if (!match) return null;
+            return {
+                source: match[1],
+                alt: match[2] || '',
+                width: Math.max(25, Math.min(100, Number(match[3]) || 100)),
+                token: match[0],
+            };
+        },
+
+        resolveImageSource(source) {
+            if (!source) return '';
+            if (source.startsWith('asset:')) {
+                const assetId = source.slice('asset:'.length);
+                return this.imageAssets[assetId] || '';
+            }
+            return source;
+        },
+
+        expandImageTokens(content) {
+            return (content || '').replace(/\[\[image:.+?\|alt=.*?\|width=\d{1,3}\]\]/g, (token) => {
+                const parsed = this.parseImageToken(token);
+                if (!parsed) return token;
+                const src = this.resolveImageSource(parsed.source);
+                if (!src) return `<p class="image-missing">Missing image</p>`;
+                const escapedAlt = parsed.alt.replace(/"/g, '&quot;');
+                const caption = escapedAlt ? `<figcaption>${escapedAlt}</figcaption>` : '';
+                return `<figure class="md-image-wrap" data-image-token="${encodeURIComponent(parsed.token)}"><img src="${src}" alt="${escapedAlt}" style="width:${parsed.width}%">${caption}</figure>`;
+            });
+        },
+
+        renderMarkdown(t) {
+            const raw = t || '';
+            const html = marked.parse(this.expandImageTokens(raw));
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+
+            const seen = {};
+            temp.querySelectorAll('h1,h2,h3,h4').forEach((h) => {
+                const base = this.slugify(h.textContent) || 'section';
+                seen[base] = (seen[base] || 0) + 1;
+                h.id = `h-${base}${seen[base] > 1 ? '-' + seen[base] : ''}`;
+            });
+
+            temp.querySelectorAll('pre code').forEach((codeEl) => {
+                const match = (codeEl.className || '').match(/language-([\w-]+)/);
+                const lang = this.normalizeLang(match ? match[1] : '');
+                const code = codeEl.textContent || '';
+                try {
+                    if (lang && hljs.getLanguage(lang)) {
+                        codeEl.innerHTML = hljs.highlight(code, { language: lang }).value;
+                        codeEl.classList.add('hljs');
+                    } else {
+                        codeEl.innerHTML = hljs.highlightAuto(code).value;
+                        codeEl.classList.add('hljs');
+                    }
+                } catch (e) {
+                    codeEl.textContent = code;
+                    codeEl.classList.add('hljs');
+                }
+            });
+
+            return temp.innerHTML;
+        },
+
+        readLocalPosts() {
+            try {
+                const raw = localStorage.getItem(POSTS_KEY) ?? localStorage.getItem(LEGACY_POSTS_KEY) ?? '[]';
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        },
+
+        writeLocalPosts(posts) {
+            localStorage.setItem(POSTS_KEY, JSON.stringify(posts));
+        },
+
+        sortPosts(posts) {
+            return [...posts].sort((a, b) => {
+                const ai = Number(a.id || 0);
+                const bi = Number(b.id || 0);
+                if (!Number.isNaN(ai) && !Number.isNaN(bi) && ai !== bi) return bi - ai;
+                return String(b.date || '').localeCompare(String(a.date || ''));
+            });
+        },
+
+        mergePosts(localPosts, serverPosts) {
+            const map = new Map();
+            (serverPosts || []).forEach((p) => map.set(String(p.id), p));
+            (localPosts || []).forEach((p) => map.set(String(p.id), p));
+            return this.sortPosts(Array.from(map.values()));
+        },
+
+        async syncPostToServer(post) {
+            try {
+                if (!this.isAdmin) return false;
+                const content = JSON.stringify(this.posts, null, 4);
+                const message = post?.id ? `Update post ${post.id}` : 'Update blog posts';
+                return await this.pushFileToGithub(this.githubPostsPath, content, message);
+            } catch (e) {
+                this.showMsg('Failed to sync posts to GitHub', 'error');
+                return false;
+            }
+        },
+
+        async deletePostFromServer(id) {
+            try {
+                if (!this.isAdmin) return false;
+                const content = JSON.stringify(this.posts, null, 4);
+                return await this.pushFileToGithub(this.githubPostsPath, content, `Delete post ${id}`);
+            } catch (e) {
+                this.showMsg('Failed to sync delete to GitHub', 'error');
+                return false;
+            }
+        },
+
+        async uploadImageToServer(file) {
+            if (!this.isAdmin) throw new Error('Admin session missing');
+            const dataUrl = await this.readFileAsDataUrl(file);
+            const parts = String(dataUrl || '').split(',', 2);
+            const base64Content = parts.length === 2 ? parts[1] : '';
+            if (!base64Content) throw new Error('Image read failed');
+
+            const originalName = file.name || 'image.png';
+            const safeName = originalName.replace(/[^A-Za-z0-9._-]/g, '_');
+            const storedPath = `${this.githubUploadsDir}/${Date.now()}_${safeName}`;
+            const ok = await this.pushBase64FileToGithub(storedPath, base64Content, `Upload image ${safeName}`);
+            if (!ok) throw new Error('GitHub upload failed');
+            return { url: storedPath };
+        },
+
+        readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(reader.error || new Error('Failed to read image'));
+                reader.readAsDataURL(file);
+            });
+        },
+
+        insertAtCursor(snippet) {
+            const ta = this.$refs.editorTextarea;
+            if (!ta) return;
+            const s = ta.selectionStart ?? 0;
+            const e = ta.selectionEnd ?? s;
+            const value = this.editor.content || '';
+            this.editor.content = value.slice(0, s) + snippet + value.slice(e);
+            this.markDirty();
+            this.queueDraftSave();
+            this.$nextTick(() => {
+                const pos = s + snippet.length;
+                ta.focus();
+                ta.setSelectionRange(pos, pos);
+            });
+        },
+
+        clearSelectedImageToken() {
+            this.selectedImageToken = '';
+            this.selectedImageWidth = 100;
+        },
+
+        handlePreviewClick(event) {
+            const figure = event.target.closest('[data-image-token]');
+            if (!figure) {
+                this.clearSelectedImageToken();
+                return;
+            }
+            const token = decodeURIComponent(figure.dataset.imageToken || '');
+            const parsed = this.parseImageToken(token);
+            if (!parsed) return;
+            this.selectedImageToken = token;
+            this.selectedImageWidth = parsed.width;
+        },
+
+        updateSelectedImageWidth(widthValue) {
+            if (!this.selectedImageToken) return;
+            const parsed = this.parseImageToken(this.selectedImageToken);
+            if (!parsed) return;
+            const nextToken = this.createImageToken(parsed.source, parsed.alt, widthValue);
+            if (nextToken === this.selectedImageToken) return;
+            this.editor.content = this.editor.content.replace(this.selectedImageToken, nextToken);
+            this.selectedImageToken = nextToken;
+            this.selectedImageWidth = Math.max(25, Math.min(100, Number(widthValue) || 100));
+            this.markDirty();
+            this.queueDraftSave();
+        },
+
+        async insertImageMarkdown(file) {
+            if (!file || !file.type || !file.type.startsWith('image/')) return;
+
+            const alt = file.name ? file.name.replace(/\.[^.]+$/, '') : '';
+            let imageSource = '';
+            let usedFallback = false;
+
+            try {
+                const uploaded = await this.uploadImageToServer(file);
+                imageSource = uploaded.url;
+            } catch (e) {
+                const assetId = `img_${Date.now()}`;
+                this.imageAssets[assetId] = await this.readFileAsDataUrl(file);
+                this.saveImageAssets();
+                imageSource = `asset:${assetId}`;
+                usedFallback = true;
+            }
+
+            this.insertAtCursor(`\n${this.createImageToken(imageSource, alt, 100)}\n`);
+            this.showMsg(usedFallback ? 'Image embedded locally' : 'Image uploaded', 'ok');
+        },
+
+        async handleImageUpload(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            await this.insertImageMarkdown(file);
+            event.target.value = '';
+        },
+
+        async handleEditorPaste(event) {
+            if (this.view !== 'editor') return;
+            const items = Array.from(event.clipboardData?.items || []);
+            const imageItem = items.find((item) => item.type && item.type.startsWith('image/'));
+            if (!imageItem) return;
+
+            const file = imageItem.getAsFile();
+            if (!file) return;
+
+            event.preventDefault();
+            await this.insertImageMarkdown(file);
+        },
+
+        loadDraft() {
+            try {
+                const raw = localStorage.getItem(DRAFT_KEY);
+                if (!raw) return null;
+                const d = JSON.parse(raw);
+                if (!d || typeof d !== 'object') return null;
+                return d;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        saveDraft() {
+            if (this.view !== 'editor') return;
+            const draft = {
+                id: this.editor.id || null,
+                title: this.editor.title || '',
+                content: this.editor.content || '',
+                selectedImageToken: this.selectedImageToken || '',
+                updatedAt: new Date().toISOString(),
+            };
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        },
+
+        restoreDraft() {
+            if (!this.isAdmin) return;
+            const d = this.loadDraft();
+            if (!d) return;
+            if (!d.title.trim() && !d.content.trim()) return;
+            this.editor = {
+                id: d.id || null,
+                title: d.title || '',
+                content: d.content || '',
+                isDirty: true,
+            };
+            this.selectedImageToken = d.selectedImageToken || '';
+        },
+
+        clearDraft() {
+            localStorage.removeItem(DRAFT_KEY);
+            this.clearSelectedImageToken();
+        },
+
+        async loadPosts() {
+            const localPosts = this.readLocalPosts();
+            this.posts = this.sortPosts(localPosts);
+
+            try {
+                const postsUrl = new URL(this.githubPostsPath, window.location.href);
+                postsUrl.searchParams.set('t', String(Date.now()));
+                const res = await fetch(postsUrl.toString(), { cache: 'no-store' });
+                if (!res.ok) return;
+                const remotePosts = await res.json();
+                if (Array.isArray(remotePosts)) {
+                    const merged = this.mergePosts(localPosts, remotePosts);
+                    this.posts = merged;
+                    this.writeLocalPosts(merged);
+                }
+            } catch (e) {
+                // static fallback, already loaded from localStorage
+            }
+        },
+
+        savePosts() {
+            this.writeLocalPosts(this.posts);
+        },
+
+        stripImageTokens(c) {
+            return (c || '').replace(/\[\[image:.+?\|alt=(.*?)\|width=\d{1,3}\]\]/g, ' $1 ');
+        },
+
+        countWords(c) {
+            return this.stripImageTokens(c).trim().split(/\s+/).filter(Boolean).length;
+        },
+
+        getExcerpt(c) {
+            return this.stripImageTokens(c).replace(/[#*_`>~\[\]!|]/g,'').replace(/\n+/g,' ').trim().slice(0,160);
+        },
+
+        buildPostUrl(postId) {
+            const url = new URL(window.location.href);
+            if (postId) {
+                url.searchParams.set('post', String(postId));
+            } else {
+                url.searchParams.delete('post');
+            }
+            return url.toString();
+        },
+
+        updatePostUrl(postId) {
+            const url = this.buildPostUrl(postId || '');
+            window.history.replaceState({}, '', url);
+        },
+
+        openPostFromUrl() {
+            const url = new URL(window.location.href);
+            const postId = url.searchParams.get('post');
+            if (!postId) return;
+            const post = this.posts.find((p) => String(p.id) === String(postId));
+            if (!post) return;
+            this.reading = { ...post };
+            this.view = 'reading';
+            this.focusMode = false;
+        },
+
+        async copyReadingLink() {
+            if (!this.reading?.id) return;
+            const url = this.buildPostUrl(this.reading.id);
+            try {
+                await navigator.clipboard.writeText(url);
+                this.showMsg('Link copied', 'ok');
+            } catch (e) {
+                window.prompt('Copy this link:', url);
+            }
+        },
+
+        goHome(options = {}) {
+            const skipDirtyCheck = !!options.skipDirtyCheck;
+            if (!skipDirtyCheck && this.view === 'editor' && this.editor.isDirty && !confirm('Unsaved changes — leave?')) return;
+            this.view = 'home'; this.focusMode = false;
+            this.updatePostUrl('');
+        },
+
+        openNewEditor() {
+            if (!this.isAdmin) {
+                this.showMsg('Admin login required', 'error');
+                return;
+            }
+            const d = this.loadDraft();
+            if (d && !d.id && (d.title.trim() || d.content.trim())) {
+                this.editor = { id: null, title: d.title, content: d.content, isDirty: true };
+                this.selectedImageToken = d.selectedImageToken || '';
+            } else {
+                this.editor = { id: null, title: '', content: '', isDirty: false };
+                this.clearSelectedImageToken();
+            }
+            this.view = 'editor';
+            this.updatePostUrl('');
+            this.$nextTick(() => this.$refs.editorTextarea?.focus());
+        },
+
+        openEditor(post) {
+            if (!this.isAdmin) {
+                this.showMsg('Admin login required', 'error');
+                return;
+            }
+            this.editor = { id: post.id, title: post.title, content: post.content, isDirty: false };
+            this.clearSelectedImageToken();
+            this.view = 'editor';
+            this.updatePostUrl('');
+            this.$nextTick(() => this.$refs.editorTextarea?.focus());
+        },
+
+        openReading(post) {
+            this.reading = { ...post };
+            this.view = 'reading';
+            this.focusMode = false;
+            this.updatePostUrl(post.id);
+        },
+
+        markDirty() { this.editor.isDirty = true; },
+
+        async savePost(options = {}) {
+            if (!this.isAdmin) {
+                if (!options.silent) this.showMsg('Admin login required', 'error');
+                return;
+            }
+            const silent = !!options.silent;
+            if (!this.editor.title.trim() && !this.editor.content.trim()) {
+                if (!silent) this.showMsg('Nothing to save.','error');
+                return;
+            }
+            const now = new Date().toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+            let savedPost;
+            if (this.editor.id) {
+                const i = this.posts.findIndex(p => p.id === this.editor.id);
+                if (i !== -1) {
+                    this.posts[i] = {...this.posts[i], title: this.editor.title, content: this.editor.content};
+                    savedPost = this.posts[i];
+                } else {
+                    savedPost = { id: this.editor.id, title: this.editor.title || 'Untitled', content: this.editor.content, date: now };
+                    this.posts.unshift(savedPost);
+                }
+            } else {
+                const p = { id: Date.now().toString(), title: this.editor.title||'Untitled', content: this.editor.content, date: now };
+                this.posts.unshift(p); this.editor.id = p.id;
+                savedPost = p;
+            }
+            this.editor.isDirty = false;
+            this.savePosts();
+            this.clearDraft();
+            const synced = savedPost ? await this.syncPostToServer(savedPost) : false;
+            if (!silent) this.showMsg(synced ? 'Saved' : 'Saved locally', 'ok');
+        },
+
+        async deletePost(id) {
+            if (!this.isAdmin) {
+                this.showMsg('Admin login required', 'error');
+                return;
+            }
+            if (!id || !confirm('Delete this entry?')) return;
+            this.posts = this.posts.filter(p => p.id !== id);
+            this.savePosts();
+            if (this.editor.id === id) this.clearDraft();
+            await this.deletePostFromServer(id);
+            this.goHome({ skipDirtyCheck: true });
+        },
+
+        downloadMarkdown() {
+            const b = new Blob([this.editor.content], {type:'text/markdown'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(b);
+            a.download = (this.editor.title||'entry').replace(/\s+/g,'-').toLowerCase()+'.md';
+            a.click();
+        },
+
+        queueDraftSave() {
+            clearTimeout(this._saveTimer);
+            this._saveTimer = setTimeout(() => {
+                this.saveDraft();
+            }, 1200);
+        },
+
+        showMsg(msg, type='ok') {
+            clearTimeout(this._msgTimer);
+            this.saveMessage = msg; this.saveMessageType = type;
+            this._msgTimer = setTimeout(() => { this.saveMessage = ''; }, 2200);
+        },
+
+        jumpEditorHeading(id) { this.$refs.previewPane?.querySelector('#'+id)?.scrollIntoView({behavior:'smooth',block:'start'}); },
+        jumpReadingHeading(id) { this.$refs.readingBody?.querySelector('#'+id)?.scrollIntoView({behavior:'smooth',block:'start'}); },
+
+        handleShortcut(e) {
+            const key = (e.key || '').toLowerCase();
+            if (e.ctrlKey && key==='s') { e.preventDefault(); if (this.view==='editor') this.savePost(); }
+            if (e.ctrlKey && e.shiftKey && key==='p') { e.preventDefault(); if (this.view==='editor') this.focusMode=!this.focusMode; }
+            if (e.key==='Escape' && this.focusMode) this.focusMode = false;
+        },
+
+        _wrap(before, after='') {
+            const ta = this.$refs.editorTextarea; if (!ta) return;
+            const s=ta.selectionStart, e=ta.selectionEnd;
+            const sel = this.editor.content.slice(s,e);
+            this.editor.content = this.editor.content.slice(0,s) + before + (sel||'text') + after + this.editor.content.slice(e);
+            this.$nextTick(() => { ta.focus(); ta.setSelectionRange(s+before.length, s+before.length+(sel||'text').length); });
+            this.markDirty();
+            this.queueDraftSave();
+        },
+
+        insertBold()       { this._wrap('**','**'); },
+        insertItalic()     { this._wrap('_','_'); },
+        insertInlineCode() { this._wrap('`','`'); },
+        insertHeading(n)   { this._wrap('\n'+'#'.repeat(n)+' ',''); },
+
+        insertCodeBlock(lang='c') {
+            const ta = this.$refs.editorTextarea; if (!ta) return;
+            const s = ta.selectionStart;
+            const sn = `\n\`\`\`${lang}\n// code\n\`\`\`\n`;
+            this.editor.content = this.editor.content.slice(0,s)+sn+this.editor.content.slice(s);
+            this.$nextTick(()=>ta.focus()); this.markDirty(); this.queueDraftSave();
+        },
+
+        insertQuote() { this._wrap('\n> ',''); },
+        insertList()  { this._wrap('\n- ',''); },
+
+        insertLink() {
+            const ta = this.$refs.editorTextarea; if (!ta) return;
+            const s=ta.selectionStart, e=ta.selectionEnd;
+            const sel = this.editor.content.slice(s,e)||'link text';
+            this.editor.content = this.editor.content.slice(0,s)+`[${sel}](url)`+this.editor.content.slice(e);
+            this.markDirty(); this.queueDraftSave();
+        },
+
+        insertTable() {
+            const ta = this.$refs.editorTextarea; if (!ta) return;
+            const s = ta.selectionStart;
+            this.editor.content = this.editor.content.slice(0,s)+'\n| Column | Column |\n|--------|--------|\n| Value  | Value  |\n'+this.editor.content.slice(s);
+            this.markDirty(); this.queueDraftSave();
+        },
+    }));
+});
+</script>
+</body>
+</html>
