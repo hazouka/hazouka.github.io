@@ -666,7 +666,7 @@ document.addEventListener('alpine:init', () => {
                 const newCommitData = await newCommitRes.json();
 
                 // 6. Update branch ref to point to new commit
-                const updateRes = await this.githubRequest(`/repos/${owner}/${repo}/git/ref/heads/${branch}`, {
+                const updateRes = await this.githubRequest(`/repos/${owner}/${repo}/git/refs/heads/${branch}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sha: newCommitData.sha }),
