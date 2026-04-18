@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>RE Blog</title>
+    <meta name="description" content="A personal notebook for reverse engineering, binary analysis, Windows internals, and tooling.">
+    <meta property="og:title" content="RE Blog">
+    <meta property="og:description" content="A personal notebook for reverse engineering, binary analysis, Windows internals, and tooling.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="RE Blog">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="RE Blog">
+    <meta name="twitter:description" content="A personal notebook for reverse engineering, binary analysis, Windows internals, and tooling.">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -234,6 +242,21 @@
 
 <input type="file" x-ref="imageUploadInput" @change="handleImageUpload($event)" accept="image/*" hidden>
 
+<!-- ═══════════════════════ CONFIRM MODAL ═══════════════════════ -->
+<div class="modal-overlay" x-show="confirmModal.show" x-transition.opacity.duration.150ms @click.self="resolveConfirmModal(false)">
+    <div class="modal-card" x-show="confirmModal.show" x-transition.scale.origin.center.duration.150ms>
+        <div class="modal-icon">
+            <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="10" stroke="var(--d-pink)" stroke-width="1.5"/><path d="M11 6v6" stroke="var(--d-pink)" stroke-width="1.6" stroke-linecap="round"/><circle cx="11" cy="15.5" r="1" fill="var(--d-pink)"/></svg>
+        </div>
+        <h3 class="modal-title" x-text="confirmModal.title"></h3>
+        <p class="modal-msg" x-text="confirmModal.message"></p>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" @click="resolveConfirmModal(false)">Cancel</button>
+            <button class="btn modal-btn-danger" @click="resolveConfirmModal(true)" x-text="confirmModal.actionLabel || 'Delete'"></button>
+        </div>
+    </div>
+</div>
+
 <!-- ═══════════════════════ SCRIPT ═══════════════════════ -->
 <script>
 document.addEventListener('alpine:init', () => {
@@ -266,6 +289,7 @@ document.addEventListener('alpine:init', () => {
         githubBranch: 'main',
         githubPostsPath: 'posts.json',
         githubUploadsDir: 'uploads',
+        confirmModal: { show: false, title: '', message: '', actionLabel: '', _resolve: null },
 
         emptyPreviewContent: `# Preview\n\nStart writing on the left.\n\n[[image:uploads/example.png|alt=|width=70]]\n\n\`\`\`c\nHANDLE hProc = OpenProcess(\n    PROCESS_ALL_ACCESS, FALSE, pid);\n\`\`\`\n\n\`\`\`asm\nmov  rax, [rbp - 0x18]\nxor  eax, eax\nret\n\`\`\`\n\nInline: \`NTSTATUS\`, \`0xDEADBEEF\`\n`,
 
@@ -308,7 +332,26 @@ document.addEventListener('alpine:init', () => {
             await this.validateGithubSession();
             this.restoreDraft();
             await this.loadPosts();
+            this.cleanupOrphanedAssets();
             this.openPostFromUrl();
+        },
+
+        showConfirmModal(title, message, actionLabel = 'Delete') {
+            return new Promise((resolve) => {
+                this.confirmModal.title = title;
+                this.confirmModal.message = message;
+                this.confirmModal.actionLabel = actionLabel;
+                this.confirmModal._resolve = resolve;
+                this.confirmModal.show = true;
+            });
+        },
+
+        resolveConfirmModal(result) {
+            if (this.confirmModal._resolve) {
+                this.confirmModal._resolve(result);
+                this.confirmModal._resolve = null;
+            }
+            this.confirmModal.show = false;
         },
 
         inferGithubDefaults() {
@@ -715,6 +758,31 @@ document.addEventListener('alpine:init', () => {
             localStorage.setItem(this.imageGithubPathsKey, JSON.stringify(this.imageGithubPaths));
         },
 
+        cleanupOrphanedAssets() {
+            for (const [id, ghPath] of Object.entries(this.imageGithubPaths || {})) {
+                if (this.imageAssets[id]) {
+                    let url = '';
+                    try {
+                        url = new URL(ghPath, window.location.href).href;
+                    } catch(e) { continue; }
+                    
+                    fetch(url, { method: 'HEAD', cache: 'no-store' }).then(res => {
+                        if (res.ok) {
+                            delete this.imageAssets[id];
+                            this.saveImageAssets();
+                        }
+                    }).catch(() => {});
+                }
+            }
+        },
+
+        getAssetIdFromPath(path) {
+            for (const [id, ghPath] of Object.entries(this.imageGithubPaths || {})) {
+                if (ghPath === path) return id;
+            }
+            return null;
+        },
+
         // Substitute asset: tokens with real GitHub paths for storage in posts.json
         substituteGithubPaths(content) {
             return (content || '').replace(/asset:([a-z0-9_]+)/g, (match, assetId) => {
@@ -783,9 +851,24 @@ document.addEventListener('alpine:init', () => {
                 if (!parsed) return token;
                 const src = this.resolveImageSource(parsed.source);
                 if (!src) return `<p class="image-missing">Missing image</p>`;
+
+                let fallbackAssetId = '';
+                if (!parsed.source.startsWith('asset:')) {
+                    const id = this.getAssetIdFromPath(parsed.source);
+                    if (id) fallbackAssetId = id;
+                } else {
+                    fallbackAssetId = parsed.source.slice(6);
+                }
+
                 const escapedAlt = parsed.alt.replace(/"/g, '&quot;');
                 const caption = escapedAlt ? `<figcaption>${escapedAlt}</figcaption>` : '';
-                return `<figure class="md-image-wrap" data-image-token="${encodeURIComponent(parsed.token)}"><img src="${src}" alt="${escapedAlt}" style="width:${parsed.width}%">${caption}</figure>`;
+                
+                let onerrorHtml = '';
+                if (fallbackAssetId) {
+                    onerrorHtml = ` onerror="if(!this.dataset.triedFallback) { this.dataset.triedFallback=true; const d = JSON.parse(localStorage.getItem('${this.imageAssetsKey}')||'{}'); if(d['${fallbackAssetId}']) this.src = d['${fallbackAssetId}']; }"`;
+                }
+
+                return `<figure class="md-image-wrap" data-image-token="${encodeURIComponent(parsed.token)}"><img src="${src}" alt="${escapedAlt}" style="width:${parsed.width}%"${onerrorHtml}>${caption}</figure>`;
             });
         },
 
@@ -1291,7 +1374,12 @@ document.addEventListener('alpine:init', () => {
 
         goHome(options = {}) {
             const skipDirtyCheck = !!options.skipDirtyCheck;
-            if (!skipDirtyCheck && this.view === 'editor' && this.editor.isDirty && !confirm('Unsaved changes — leave?')) return;
+            if (!skipDirtyCheck && this.view === 'editor' && this.editor.isDirty) {
+                this.showConfirmModal('Unsaved Changes', 'You have unsaved changes. Leave anyway?', 'Leave').then(ok => {
+                    if (ok) { this.view = 'home'; this.focusMode = false; this.updatePostUrl(''); }
+                });
+                return;
+            }
             this.view = 'home'; this.focusMode = false;
             this.updatePostUrl('');
         },
@@ -1319,8 +1407,14 @@ document.addEventListener('alpine:init', () => {
                 this.showMsg('Admin login required', 'error');
                 return;
             }
-            this.editor = { id: post.id, title: post.title, content: post.content, isDirty: false };
-            this.clearSelectedImageToken();
+            const d = this.loadDraft();
+            if (d && String(d.id) === String(post.id) && (d.title !== post.title || d.content !== post.content)) {
+                this.editor = { id: post.id, title: d.title, content: d.content, isDirty: true };
+                this.selectedImageToken = d.selectedImageToken || '';
+            } else {
+                this.editor = { id: post.id, title: post.title, content: post.content, isDirty: false };
+                this.clearSelectedImageToken();
+            }
             this.view = 'editor';
             this.updatePostUrl('');
             this.$nextTick(() => this.$refs.editorTextarea?.focus());
@@ -1415,23 +1509,13 @@ document.addEventListener('alpine:init', () => {
                 ];
                 synced = await this.atomicGithubCommit(allFiles, 'Update post ' + this.editor.id);
 
-                // Clean up: replace asset: tokens with real GitHub paths in memory
+                // Clean up pending uploads but KEEP local data URLs for immediate viewing
                 if (synced) {
                     for (const f of imageFiles) {
-                        const assetToken = 'asset:' + f.assetId;
-                        const ghPath = this.imageGithubPaths[f.assetId] || f.path;
-                        // Update editor content
-                        this.editor.content = this.editor.content.split(assetToken).join(ghPath);
-                        // Update the post in the posts array
-                        const pi = this.posts.findIndex(p => p.id === this.editor.id);
-                        if (pi !== -1) {
-                            this.posts[pi].content = this.posts[pi].content.split(assetToken).join(ghPath);
-                        }
-                        delete this.imageAssets[f.assetId];
                         delete this.pendingImageUploads[f.assetId];
                     }
-                    this.saveImageAssets();
-                    this.savePosts();
+                    // Don't delete imageAssets — they serve as local cache until GitHub Pages deploys
+                    // Don't substitute asset: tokens — resolveImageSource handles the fallback chain
                 }
             } else {
                 synced = savedPost ? await this.syncPostToServer(savedPost) : false;
@@ -1453,7 +1537,10 @@ document.addEventListener('alpine:init', () => {
                 this.showMsg('Admin login required', 'error');
                 return;
             }
-            if (!id || !confirm('Delete this entry?')) return;
+            if (!id) return;
+            const ok = await this.showConfirmModal('Delete Entry', 'Are you sure you want to delete this entry? This action cannot be undone.', 'Delete');
+            if (!ok) return;
+            
             this.addDeletedId(id);
             this.posts = this.posts.filter(p => p.id !== id);
             this.savePosts();
@@ -1462,6 +1549,8 @@ document.addEventListener('alpine:init', () => {
             if (synced) {
                 this.removeDeletedId(id);
                 this.showMsg('Deleted from GitHub ✓', 'ok');
+            } else {
+                this.showMsg('Deleted locally.', 'ok');
             }
             this.goHome({ skipDirtyCheck: true });
         },

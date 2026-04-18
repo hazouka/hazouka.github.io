@@ -250,6 +250,70 @@ input, textarea { font-family: inherit; }
 .btn-ghost-danger:hover { background: rgba(243,139,168,0.1); border-color: var(--d-pink); color: var(--d-pink); }
 .btn-ghost-danger:disabled { opacity: 0.25; cursor: not-allowed; }
 
+/* ── Modals ──────────────────────────────────────────────── */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 15, 20, 0.75);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modal-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+}
+
+.modal-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+}
+
+.modal-title {
+    font-family: var(--font-ui);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-head);
+    margin-bottom: 0.75rem;
+}
+
+.modal-msg {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 2rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.modal-btn-danger {
+    background: rgba(243,139,168,0.1);
+    border-color: var(--d-pink);
+    color: var(--d-pink);
+}
+.modal-btn-danger:hover {
+    background: rgba(243,139,168,0.2) !important;
+    border-color: #ff9fb9 !important;
+    color: #ff9fb9 !important;
+}
+
 /* ══════════════════════════════════════════════════════════
    VIEW CONTAINER
 ══════════════════════════════════════════════════════════ */
