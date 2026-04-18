@@ -1508,7 +1508,28 @@
             if (copyBtn) {
               const codeEl = copyBtn.parentNode.querySelector("code");
               if (codeEl) {
-                navigator.clipboard.writeText(codeEl.textContent).then(() => {
+                const textToCopy = codeEl.textContent;
+                
+                const performCopy = () => {
+                  if (navigator.clipboard) {
+                    return navigator.clipboard.writeText(textToCopy).catch(() => fallbackCopy());
+                  } else {
+                    return Promise.resolve(fallbackCopy());
+                  }
+                };
+                
+                const fallbackCopy = () => {
+                  const ta = document.createElement("textarea");
+                  ta.value = textToCopy;
+                  ta.style.position = "fixed";
+                  ta.style.opacity = "0";
+                  document.body.appendChild(ta);
+                  ta.select();
+                  try { document.execCommand("copy"); } catch (e) {}
+                  document.body.removeChild(ta);
+                };
+
+                performCopy().then(() => {
                   const oldHtml = copyBtn.innerHTML;
                   copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
                   copyBtn.style.color = "#a6e3a1"; // Green tick
