@@ -44,7 +44,7 @@ html {
 
 body {
   font-family: var(--font-body);
-  background: rgba(13, 17, 23, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: var(--bg);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
@@ -580,7 +580,7 @@ textarea {
   padding: 0.9rem 1.5rem 0.7rem;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-  background: rgba(13, 17, 23, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  background: var(--bg);
 }
 
 .title-input {
