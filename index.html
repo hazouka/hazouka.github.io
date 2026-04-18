@@ -338,20 +338,24 @@ document.addEventListener('alpine:init', () => {
 
         showConfirmModal(title, message, actionLabel = 'Delete') {
             return new Promise((resolve) => {
-                this.confirmModal.title = title;
-                this.confirmModal.message = message;
-                this.confirmModal.actionLabel = actionLabel;
-                this.confirmModal._resolve = resolve;
-                this.confirmModal.show = true;
+                this.confirmModal = {
+                    show: true,
+                    title: title,
+                    message: message,
+                    actionLabel: actionLabel,
+                    _resolve: resolve
+                };
             });
         },
 
         resolveConfirmModal(result) {
-            if (this.confirmModal._resolve) {
-                this.confirmModal._resolve(result);
-                this.confirmModal._resolve = null;
-            }
-            this.confirmModal.show = false;
+            const resolveFn = this.confirmModal._resolve;
+            this.confirmModal = {
+                ...this.confirmModal,
+                show: false,
+                _resolve: null
+            };
+            if (resolveFn) resolveFn(result);
         },
 
         inferGithubDefaults() {
