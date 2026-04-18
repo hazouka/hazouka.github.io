@@ -776,8 +776,14 @@ document.addEventListener('alpine:init', () => {
                     this.syncErrorMessage = 'Admin login required. Open /vault-9k3p-admin.html first.';
                     return false;
                 }
-                const content = JSON.stringify(this.posts, null, 4);
-                return await this.pushFileToGithub(this.githubPostsPath, content, `Delete post ${id}`);
+                // Update posts.json to remove the post
+                const postsContent = JSON.stringify(this.posts, null, 4);
+                const jsonOk = await this.pushFileToGithub(this.githubPostsPath, postsContent, 'Delete post ' + id);
+
+                // Also delete the post's image folder from GitHub
+                this.deletePostFolderFromGithub('posts/' + id + '/images').catch(() => {});
+
+                return jsonOk;
             } catch (e) {
                 this.syncErrorMessage = 'Failed to sync delete to GitHub';
                 this.showMsg('Failed to sync delete to GitHub', 'error');
@@ -785,7 +791,36 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async uploadImageToServer(file) {
+        async deletePostFolderFromGithub(folderPath) {
+            // List all files in the folder, then delete each one
+            const encodedPath = this.githubApiPath(folderPath);
+            const res = await this.githubRequest(
+                '/repos/' + encodeURIComponent(this.githubOwner) + '/' + encodeURIComponent(this.githubRepo) +
+                '/contents/' + encodedPath + '?ref=' + encodeURIComponent(this.githubBranch)
+            );
+            if (!res.ok) return; // folder doesn't exist, nothing to do
+            const files = await res.json();
+            if (!Array.isArray(files)) return;
+            for (const file of files) {
+                if (file.type === 'file' && file.sha) {
+                    await this.githubRequest(
+                        '/repos/' + encodeURIComponent(this.githubOwner) + '/' + encodeURIComponent(this.githubRepo) +
+                        '/contents/' + this.githubApiPath(file.path),
+                        {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                message: 'Delete image ' + file.name,
+                                sha: file.sha,
+                                branch: this.githubBranch,
+                            }),
+                        }
+                    );
+                }
+            }
+        },
+
+        async uploadImageToServer(file, postId) {
             if (!this.isAdmin) throw new Error('Admin session missing');
             const dataUrl = await this.readFileAsDataUrl(file);
             const parts = String(dataUrl || '').split(',', 2);
@@ -794,9 +829,10 @@ document.addEventListener('alpine:init', () => {
 
             const originalName = file.name || 'image.png';
             const safeName = originalName.replace(/[^A-Za-z0-9._-]/g, '_');
-            const uploadsDir = this.normalizeUploadsDir(this.githubUploadsDir || 'uploads');
-            const storedPath = `${uploadsDir}/${Date.now()}_${safeName}`;
-            const ok = await this.pushBase64FileToGithub(storedPath, base64Content, `Upload image ${safeName}`);
+            // Per-post folder: posts/{postId}/images/
+            const pid = postId || this.editor.id || ('tmp_' + Date.now());
+            const storedPath = 'posts/' + pid + '/images/' + Date.now() + '_' + safeName;
+            const ok = await this.pushBase64FileToGithub(storedPath, base64Content, 'Upload image ' + safeName);
             if (!ok) throw new Error('GitHub upload failed');
             return { url: storedPath };
         },
@@ -861,22 +897,31 @@ document.addEventListener('alpine:init', () => {
             if (!file || !file.type || !file.type.startsWith('image/')) return;
 
             const alt = file.name ? file.name.replace(/\.[^.]+$/, '') : '';
-            let imageSource = '';
-            let usedFallback = false;
 
+            // 1. Show image instantly via local asset so preview works immediately
+            const assetId = 'img_' + Date.now();
+            const dataUrl = await this.readFileAsDataUrl(file);
+            this.imageAssets[assetId] = dataUrl;
+            this.saveImageAssets();
+            const placeholderToken = this.createImageToken('asset:' + assetId, alt, 100);
+            this.insertAtCursor('\n' + placeholderToken + '\n');
+            this.showMsg('Uploading image...', 'ok');
+
+            // 2. Upload to GitHub in background, then swap token to real path
             try {
                 const uploaded = await this.uploadImageToServer(file);
-                imageSource = uploaded.url;
-            } catch (e) {
-                const assetId = `img_${Date.now()}`;
-                this.imageAssets[assetId] = await this.readFileAsDataUrl(file);
+                const realToken = this.createImageToken(uploaded.url, alt, 100);
+                this.editor.content = this.editor.content.replace(placeholderToken, realToken);
+                // Clean up local asset now that we have the GitHub URL
+                delete this.imageAssets[assetId];
                 this.saveImageAssets();
-                imageSource = `asset:${assetId}`;
-                usedFallback = true;
+                this.markDirty();
+                this.queueDraftSave();
+                this.showMsg('Image uploaded to GitHub', 'ok');
+            } catch (e) {
+                // Keep local asset as permanent fallback if upload fails
+                this.showMsg('Image embedded locally (upload failed)', 'ok');
             }
-
-            this.insertAtCursor(`\n${this.createImageToken(imageSource, alt, 100)}\n`);
-            this.showMsg(usedFallback ? 'Image embedded locally' : 'Image uploaded', 'ok');
         },
 
         async handleImageUpload(event) {
@@ -1193,4 +1238,3 @@ document.addEventListener('alpine:init', () => {
 </script>
 </body>
 </html>
-    
