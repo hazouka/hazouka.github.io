@@ -40,6 +40,7 @@
         <template x-if="view === 'home'">
             <div class="hdr-actions">
                 <input class="search-hdr" type="text" x-model="topicQuery" placeholder="Search entries...">
+                <button class="btn btn-ghost" x-show="!isAdmin" @click="openAdminPage()">Admin Login</button>
                 <button class="btn btn-ghost" x-show="isAdmin" @click="logoutAdmin()">Logout</button>
                 <button class="btn btn-primary" x-show="isAdmin" @click="openNewEditor()">
                     <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M5.5 1v9M1 5.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -300,6 +301,7 @@ document.addEventListener('alpine:init', () => {
             marked.setOptions({ breaks: true, gfm: true });
             this.loadImageAssets();
             this.restoreGithubSettings();
+            await this.validateGithubSession();
             this.restoreDraft();
             await this.loadPosts();
             this.openPostFromUrl();
@@ -334,11 +336,16 @@ document.addEventListener('alpine:init', () => {
             this.githubOwner = parsed.owner || defaults.owner || '';
             this.githubRepo = parsed.repo || defaults.repo || '';
             this.githubBranch = parsed.branch || 'main';
-            this.githubPostsPath = parsed.postsPath || 'posts.json';
-            this.githubUploadsDir = parsed.uploadsDir || 'uploads';
+            this.githubPostsPath = String(parsed.postsPath || 'posts.json').replace(/^\/+/, '');
+            this.githubUploadsDir = this.normalizeUploadsDir(parsed.uploadsDir || 'uploads');
         },
 
         saveGithubSettings() {
+            this.githubOwner = this.githubOwner.trim();
+            this.githubRepo = this.githubRepo.trim();
+            this.githubBranch = this.githubBranch.trim() || 'main';
+            this.githubPostsPath = String(this.githubPostsPath || 'posts.json').replace(/^\/+/, '') || 'posts.json';
+            this.githubUploadsDir = this.normalizeUploadsDir(this.githubUploadsDir || 'uploads');
             const payload = {
                 token: this.githubToken,
                 owner: this.githubOwner,
@@ -348,6 +355,15 @@ document.addEventListener('alpine:init', () => {
                 uploadsDir: this.githubUploadsDir,
             };
             localStorage.setItem(GITHUB_SETTINGS_KEY, JSON.stringify(payload));
+        },
+
+        normalizeUploadsDir(value) {
+            const cleaned = String(value || 'uploads').replace(/^\/+|\/+$/g, '');
+            return cleaned || 'uploads';
+        },
+
+        openAdminPage() {
+            window.location.href = 'vault-9k3p-admin.html';
         },
 
         clearAdminSession() {
@@ -370,6 +386,11 @@ document.addEventListener('alpine:init', () => {
             if (!this.githubOwner || !this.githubRepo) {
                 this.syncErrorMessage = 'Missing GitHub owner/repo in admin settings.';
                 this.showMsg('Missing GitHub owner/repo in admin settings', 'error');
+                return false;
+            }
+            if (!this.githubPostsPath) {
+                this.syncErrorMessage = 'Missing posts JSON path in admin settings.';
+                this.showMsg('Missing posts JSON path in admin settings', 'error');
                 return false;
             }
             this.syncErrorMessage = '';
@@ -403,6 +424,58 @@ document.addEventListener('alpine:init', () => {
                 return payload?.message ? String(payload.message) : '';
             } catch (e) {
                 return '';
+            }
+        },
+
+        async validateGithubSession() {
+            if (!this.isAdmin) {
+                this.syncErrorMessage = 'Admin login required. Open /vault-9k3p-admin.html first.';
+                return;
+            }
+            if (!this.githubOwner || !this.githubRepo) {
+                this.syncErrorMessage = 'Missing GitHub owner/repo in admin settings.';
+                return;
+            }
+
+            try {
+                const repoRes = await this.githubRequest(
+                    `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}`
+                );
+                if (repoRes.status === 401 || repoRes.status === 403) {
+                    this.syncErrorMessage = 'GitHub token rejected. Re-login on secret admin page.';
+                    this.clearAdminSession();
+                    this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
+                    return;
+                }
+                if (!repoRes.ok) {
+                    const reason = await this.readGithubErrorMessage(repoRes);
+                    this.syncErrorMessage = reason || `GitHub repo check failed (${repoRes.status})`;
+                    return;
+                }
+
+                const repoPayload = await repoRes.json();
+                const defaultBranch = repoPayload?.default_branch || 'main';
+                if (!this.githubBranch) {
+                    this.githubBranch = defaultBranch;
+                    this.saveGithubSettings();
+                }
+
+                const branchRes = await this.githubRequest(
+                    `/repos/${encodeURIComponent(this.githubOwner)}/${encodeURIComponent(this.githubRepo)}/branches/${encodeURIComponent(this.githubBranch)}`
+                );
+                if (branchRes.status === 404) {
+                    this.githubBranch = defaultBranch;
+                    this.saveGithubSettings();
+                    this.showMsg(`Branch not found. Switched to ${defaultBranch}.`, 'ok');
+                } else if (!branchRes.ok && branchRes.status !== 403 && branchRes.status !== 401) {
+                    const reason = await this.readGithubErrorMessage(branchRes);
+                    this.syncErrorMessage = reason || `Branch check failed (${branchRes.status})`;
+                    return;
+                }
+
+                this.syncErrorMessage = '';
+            } catch (e) {
+                this.syncErrorMessage = 'GitHub settings check failed';
             }
         },
 
@@ -470,8 +543,9 @@ document.addEventListener('alpine:init', () => {
                 return false;
             }
             if (!retryRes.ok) {
-                this.syncErrorMessage = `GitHub save failed (${retryRes.status})`;
-                this.showMsg(`GitHub save failed (${retryRes.status})`, 'error');
+                const reason = await this.readGithubErrorMessage(retryRes);
+                this.syncErrorMessage = reason ? `GitHub save failed: ${reason}` : `GitHub save failed (${retryRes.status})`;
+                this.showMsg(this.syncErrorMessage, 'error');
                 return false;
             }
             this.syncErrorMessage = '';
@@ -527,8 +601,9 @@ document.addEventListener('alpine:init', () => {
                 return false;
             }
             if (!retryRes.ok) {
-                this.syncErrorMessage = `GitHub upload failed (${retryRes.status})`;
-                this.showMsg(`GitHub upload failed (${retryRes.status})`, 'error');
+                const reason = await this.readGithubErrorMessage(retryRes);
+                this.syncErrorMessage = reason ? `GitHub upload failed: ${reason}` : `GitHub upload failed (${retryRes.status})`;
+                this.showMsg(this.syncErrorMessage, 'error');
                 return false;
             }
             this.syncErrorMessage = '';
@@ -711,7 +786,8 @@ document.addEventListener('alpine:init', () => {
 
             const originalName = file.name || 'image.png';
             const safeName = originalName.replace(/[^A-Za-z0-9._-]/g, '_');
-            const storedPath = `${this.githubUploadsDir}/${Date.now()}_${safeName}`;
+            const uploadsDir = this.normalizeUploadsDir(this.githubUploadsDir || 'uploads');
+            const storedPath = `${uploadsDir}/${Date.now()}_${safeName}`;
             const ok = await this.pushBase64FileToGithub(storedPath, base64Content, `Upload image ${safeName}`);
             if (!ok) throw new Error('GitHub upload failed');
             return { url: storedPath };
