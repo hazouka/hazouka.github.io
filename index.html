@@ -667,7 +667,15 @@ document.addEventListener('alpine:init', () => {
                 const assetId = source.slice('asset:'.length);
                 return this.imageAssets[assetId] || '';
             }
-            return source;
+            if (source.startsWith('http://') || source.startsWith('https://') || source.startsWith('data:')) {
+                return source;
+            }
+            // Resolve relative paths against the page's base URL so images work on GitHub Pages
+            try {
+                return new URL(source, window.location.href).href;
+            } catch (e) {
+                return source;
+            }
         },
 
         expandImageTokens(content) {
@@ -1185,3 +1193,4 @@ document.addEventListener('alpine:init', () => {
 </script>
 </body>
 </html>
+    
