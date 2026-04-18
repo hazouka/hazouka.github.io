@@ -1044,10 +1044,49 @@ document.addEventListener('alpine:init', () => {
             this.clearSelectedImageToken();
         },
 
+        async fetchPostsViaApi() {
+            const owner = this.githubOwner;
+            const repo = this.githubRepo;
+            const branch = this.githubBranch || 'main';
+            if (!owner || !repo) return null;
+
+            const encodedPath = this.githubApiPath(this.githubPostsPath);
+            const url = `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodedPath}?ref=${encodeURIComponent(branch)}`;
+
+            const headers = {
+                Accept: 'application/vnd.github.raw+json',
+                'X-GitHub-Api-Version': '2022-11-28',
+            };
+            if (this.githubToken) {
+                headers.Authorization = `Bearer ${this.githubToken}`;
+            }
+
+            const res = await fetch(url, { headers, cache: 'no-store' });
+            if (!res.ok) return null;
+
+            const posts = await res.json();
+            return Array.isArray(posts) ? posts : null;
+        },
+
         async loadPosts() {
+            // Show local posts immediately for instant perceived load
             const localPosts = this.readLocalPosts();
             this.posts = this.sortPosts(localPosts);
 
+            // Primary: GitHub Contents API — always returns latest commit, bypasses CDN cache
+            // Works unauthenticated for public repos (60 req/hr per IP, fine for a blog)
+            try {
+                const apiPosts = await this.fetchPostsViaApi();
+                if (apiPosts) {
+                    this.posts = this.sortPosts(apiPosts);
+                    this.writeLocalPosts(this.posts);
+                    return;
+                }
+            } catch (e) {
+                // API unavailable (rate limited, network error) — fall through to static
+            }
+
+            // Fallback: static file from GitHub Pages (may be CDN-cached / stale)
             try {
                 const postsUrl = new URL(this.githubPostsPath, window.location.href);
                 postsUrl.searchParams.set('t', String(Date.now()));
@@ -1060,7 +1099,7 @@ document.addEventListener('alpine:init', () => {
                     this.writeLocalPosts(merged);
                 }
             } catch (e) {
-                // static fallback, already loaded from localStorage
+                // both failed, already loaded from localStorage
             }
         },
 
