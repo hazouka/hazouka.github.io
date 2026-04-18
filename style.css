@@ -846,6 +846,7 @@ kbd {
 
     body {
         overflow: auto;
+        overflow-x: hidden;
         height: auto;
         min-height: 100vh;
     }
@@ -887,6 +888,19 @@ kbd {
         height: auto;
         min-height: calc(100vh - var(--header-h));
         overflow: visible;
+    }
+
+    .site-header,
+    .view,
+    .home-wrap,
+    .reading-layout,
+    .toolbar,
+    .editor-panes,
+    .pane,
+    .pane-scroll,
+    .editor-ta,
+    .markdown-body {
+        max-width: 100%;
     }
 
     .home-wrap {
@@ -950,9 +964,23 @@ kbd {
     .markdown-body {
         font-size: 1rem;
         line-height: 1.65;
+        overflow-x: hidden;
     }
 
     .markdown-body h1 { font-size: 1.55rem; }
     .markdown-body h2 { font-size: 1.25rem; }
     .markdown-body h3 { font-size: 1.06rem; }
+
+    .markdown-body pre,
+    .markdown-body pre code {
+        overflow-x: auto;
+        max-width: 100%;
+    }
+
+    .markdown-body table {
+        display: block;
+        overflow-x: auto;
+        max-width: 100%;
+        white-space: nowrap;
+    }
 }

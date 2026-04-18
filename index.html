@@ -363,13 +363,16 @@ document.addEventListener('alpine:init', () => {
 
         requireAdminConfig() {
             if (!this.isAdmin) {
+                this.syncErrorMessage = 'Admin login required. Open /vault-9k3p-admin.html first.';
                 this.showMsg('Open /vault-9k3p-admin.html first', 'error');
                 return false;
             }
             if (!this.githubOwner || !this.githubRepo) {
+                this.syncErrorMessage = 'Missing GitHub owner/repo in admin settings.';
                 this.showMsg('Missing GitHub owner/repo in admin settings', 'error');
                 return false;
             }
+            this.syncErrorMessage = '';
             return true;
         },
 
@@ -670,7 +673,10 @@ document.addEventListener('alpine:init', () => {
 
         async syncPostToServer(post) {
             try {
-                if (!this.isAdmin) return false;
+                if (!this.isAdmin) {
+                    this.syncErrorMessage = 'Admin login required. Open /vault-9k3p-admin.html first.';
+                    return false;
+                }
                 const content = JSON.stringify(this.posts, null, 4);
                 const message = post?.id ? `Update post ${post.id}` : 'Update blog posts';
                 return await this.pushFileToGithub(this.githubPostsPath, content, message);
@@ -683,7 +689,10 @@ document.addEventListener('alpine:init', () => {
 
         async deletePostFromServer(id) {
             try {
-                if (!this.isAdmin) return false;
+                if (!this.isAdmin) {
+                    this.syncErrorMessage = 'Admin login required. Open /vault-9k3p-admin.html first.';
+                    return false;
+                }
                 const content = JSON.stringify(this.posts, null, 4);
                 return await this.pushFileToGithub(this.githubPostsPath, content, `Delete post ${id}`);
             } catch (e) {
