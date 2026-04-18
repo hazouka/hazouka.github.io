@@ -878,6 +878,17 @@ kbd {
         max-width: 160px;
     }
 
+    .view {
+        height: auto;
+        min-height: calc(100vh - var(--header-h));
+    }
+
+    .view-editor-wrap {
+        height: auto;
+        min-height: calc(100vh - var(--header-h));
+        overflow: visible;
+    }
+
     .home-wrap {
         padding: 2rem 1rem 3rem;
     }
@@ -906,6 +917,20 @@ kbd {
 
     .toolbar {
         padding: 0.4rem 0.55rem;
+    }
+
+    .editor-panes {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .pane {
+        min-height: 260px;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .pane:last-child {
+        border-bottom: none;
     }
 
     .pane-bar {

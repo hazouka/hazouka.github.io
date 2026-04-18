@@ -255,6 +255,7 @@ document.addEventListener('alpine:init', () => {
         imageAssets: {},
         selectedImageToken: '',
         selectedImageWidth: 100,
+        syncErrorMessage: '',
         githubToken: '',
         githubOwner: '',
         githubRepo: '',
@@ -448,6 +449,7 @@ document.addEventListener('alpine:init', () => {
                 : res;
 
             if (retryRes.status === 401) {
+                this.syncErrorMessage = 'GitHub token rejected. Re-login on secret admin page.';
                 this.clearAdminSession();
                 this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
                 return false;
@@ -455,17 +457,21 @@ document.addEventListener('alpine:init', () => {
             if (retryRes.status === 403) {
                 const reason = await this.readGithubErrorMessage(retryRes);
                 if (/bad credentials|expired/i.test(reason)) {
+                    this.syncErrorMessage = 'GitHub token rejected. Re-login on secret admin page.';
                     this.clearAdminSession();
                     this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
                     return false;
                 }
+                this.syncErrorMessage = reason ? `GitHub denied write: ${reason}` : 'GitHub denied write (403). Check token permissions.';
                 this.showMsg(reason ? `GitHub denied write: ${reason}` : 'GitHub denied write (403). Check token permissions.', 'error');
                 return false;
             }
             if (!retryRes.ok) {
+                this.syncErrorMessage = `GitHub save failed (${retryRes.status})`;
                 this.showMsg(`GitHub save failed (${retryRes.status})`, 'error');
                 return false;
             }
+            this.syncErrorMessage = '';
             return true;
         },
 
@@ -500,6 +506,7 @@ document.addEventListener('alpine:init', () => {
                 : res;
 
             if (retryRes.status === 401) {
+                this.syncErrorMessage = 'GitHub token rejected. Re-login on secret admin page.';
                 this.clearAdminSession();
                 this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
                 return false;
@@ -507,17 +514,21 @@ document.addEventListener('alpine:init', () => {
             if (retryRes.status === 403) {
                 const reason = await this.readGithubErrorMessage(retryRes);
                 if (/bad credentials|expired/i.test(reason)) {
+                    this.syncErrorMessage = 'GitHub token rejected. Re-login on secret admin page.';
                     this.clearAdminSession();
                     this.showMsg('GitHub token rejected. Re-login on secret admin page.', 'error');
                     return false;
                 }
+                this.syncErrorMessage = reason ? `GitHub denied upload: ${reason}` : 'GitHub denied upload (403). Check token permissions.';
                 this.showMsg(reason ? `GitHub denied upload: ${reason}` : 'GitHub denied upload (403). Check token permissions.', 'error');
                 return false;
             }
             if (!retryRes.ok) {
+                this.syncErrorMessage = `GitHub upload failed (${retryRes.status})`;
                 this.showMsg(`GitHub upload failed (${retryRes.status})`, 'error');
                 return false;
             }
+            this.syncErrorMessage = '';
             return true;
         },
 
@@ -664,6 +675,7 @@ document.addEventListener('alpine:init', () => {
                 const message = post?.id ? `Update post ${post.id}` : 'Update blog posts';
                 return await this.pushFileToGithub(this.githubPostsPath, content, message);
             } catch (e) {
+                this.syncErrorMessage = 'Failed to sync posts to GitHub';
                 this.showMsg('Failed to sync posts to GitHub', 'error');
                 return false;
             }
@@ -675,6 +687,7 @@ document.addEventListener('alpine:init', () => {
                 const content = JSON.stringify(this.posts, null, 4);
                 return await this.pushFileToGithub(this.githubPostsPath, content, `Delete post ${id}`);
             } catch (e) {
+                this.syncErrorMessage = 'Failed to sync delete to GitHub';
                 this.showMsg('Failed to sync delete to GitHub', 'error');
                 return false;
             }
@@ -987,7 +1000,15 @@ document.addEventListener('alpine:init', () => {
             this.savePosts();
             this.clearDraft();
             const synced = savedPost ? await this.syncPostToServer(savedPost) : false;
-            if (!silent) this.showMsg(synced ? 'Saved' : 'Saved locally', 'ok');
+            if (!silent) {
+                if (synced) {
+                    this.showMsg('Saved to GitHub', 'ok');
+                } else if (this.syncErrorMessage) {
+                    this.showMsg(`${this.syncErrorMessage} (saved locally)`, 'error');
+                } else {
+                    this.showMsg('Saved locally', 'ok');
+                }
+            }
         },
 
         async deletePost(id) {
