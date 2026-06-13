@@ -257,42 +257,45 @@
 
         <div class="toolbar" x-show="!focusMode">
             <div class="tb-group">
-                <button class="tb-btn" @click="insertHeading(2)"># H2</button>
-                <button class="tb-btn" @click="insertHeading(3)">## H3</button>
+                <button class="tb-btn tb-h" @click="insertHeading(1)">H1</button>
+                <button class="tb-btn tb-h" @click="insertHeading(2)">H2</button>
+                <button class="tb-btn tb-h" @click="insertHeading(3)">H3</button>
+                <button class="tb-btn tb-h" @click="insertHeading(4)">H4</button>
             </div>
             <div class="tb-sep"></div>
             <div class="tb-group">
                 <button class="tb-btn tb-b" @click="insertBold()">B</button>
                 <button class="tb-btn tb-i" @click="insertItalic()">I</button>
+                <button class="tb-btn tb-s" @click="insertStrikethrough()">S</button>
                 <button class="tb-btn" @click="insertInlineCode()">`&thinsp;`</button>
+                <button class="tb-btn" @click="insertLink()">Link</button>
             </div>
             <div class="tb-sep"></div>
             <div class="tb-group">
-                <button class="tb-btn tb-lang" @click="insertCodeBlock('c')">
-                    C
-                </button>
-                <button class="tb-btn tb-lang" @click="insertCodeBlock('cpp')">
-                    C++
-                </button>
-                <button class="tb-btn tb-lang" @click="insertCodeBlock('asm')">
-                    ASM
-                </button>
-                <button class="tb-btn tb-lang" @click="insertCodeBlock('python')">
-                    PY
-                </button>
-                <button class="tb-btn tb-lang" @click="insertCodeBlock('rust')">
-                    RS
-                </button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('c')" title="C">C</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('cpp')" title="C++">C++</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('asm')" title="Assembly">ASM</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('python')" title="Python">PY</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('rust')" title="Rust">RS</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('javascript')" title="JavaScript">JS</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('go')" title="Go">GO</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('csharp')" title="C#">C#</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('bash')" title="Bash">SH</button>
+                <button class="tb-btn tb-lang" @click="insertCodeBlock('powershell')" title="PowerShell">PS</button>
             </div>
             <div class="tb-sep"></div>
             <div class="tb-group">
                 <button class="tb-btn" @click="insertQuote()">Quote</button>
                 <button class="tb-btn" @click="insertList()">List</button>
-                <button class="tb-btn" @click="insertLink()">Link</button>
+                <button class="tb-btn" @click="insertNumberedList()">Num</button>
+                <button class="tb-btn" @click="insertTaskList()">Task</button>
                 <button class="tb-btn" @click="insertTable()">Table</button>
-                <button class="tb-btn" @click="$refs.imageUploadInput.click()">
-                    Image
-                </button>
+                <button class="tb-btn" @click="$refs.imageUploadInput.click()">Image</button>
+                <button class="tb-btn" @click="insertHorizontalRule()">HR</button>
+                <button class="tb-btn" @click="insertCallout()">Alert</button>
+                <button class="tb-btn" @click="insertDetails()">Fold</button>
+                <button class="tb-btn" @click="insertHexDump()">Hex</button>
+                <button class="tb-btn" @click="insertMermaid()">Dia</button>
             </div>
             <div class="tb-spacer"></div>
             <button class="tb-btn tb-help-btn" @click="showFormatGuide = true" title="Formatting guide">
@@ -354,11 +357,12 @@
             <h3 class="modal-title">Formatting Guide</h3>
             <div class="guide-scroll">
                 <table class="guide-table">
-                    <tr><td class="guide-syntax"># Heading</td><td>Section heading</td></tr>
+                    <tr><td class="guide-syntax"># Heading</td><td>Section heading (H1-H4)</td></tr>
                     <tr><td class="guide-syntax">**bold**</td><td>Bold text</td></tr>
                     <tr><td class="guide-syntax">*italic*</td><td>Italic text</td></tr>
+                    <tr><td class="guide-syntax">~~strikethrough~~</td><td>Strikethrough</td></tr>
                     <tr><td class="guide-syntax">`code`</td><td>Inline code</td></tr>
-                    <tr><td class="guide-syntax">```lang<br>code```</td><td>Code block (c, cpp, asm, python, rust, ps1, mermaid)</td></tr>
+                    <tr><td class="guide-syntax">```lang<br>code```</td><td>Code block (c, cpp, asm, python, rust, js, go, csharp, bash, ps1, mermaid)</td></tr>
                     <tr><td class="guide-syntax">[[hex:4D5A9000...]]</td><td>Inline hex dump viewer</td></tr>
                     <tr><td class="guide-syntax">[[hex:offset=0x1000\|...]]</td><td>Hex dump with custom offset</td></tr>
                     <tr><td class="guide-syntax">[[image:url\|alt=\|width=70]]</td><td>Image with resize</td></tr>
@@ -367,6 +371,8 @@
                     <tr><td class="guide-syntax">> quote</td><td>Blockquote</td></tr>
                     <tr><td class="guide-syntax">- item</td><td>Bullet list</td></tr>
                     <tr><td class="guide-syntax">1. item</td><td>Numbered list</td></tr>
+                    <tr><td class="guide-syntax">- [ ] task</td><td>Task list / checkbox</td></tr>
+                    <tr><td class="guide-syntax">> [!NOTE]</td><td>Callout / alert box</td></tr>
                     <tr><td class="guide-syntax">[text](url)</td><td>Hyperlink</td></tr>
                     <tr><td class="guide-syntax">\| A \| B \|</td><td>Table</td></tr>
                     <tr><td class="guide-syntax">---</td><td>Horizontal rule</td></tr>
@@ -2408,6 +2414,75 @@
                     this.queuePreviewRender();
                 },
 
+                insertStrikethrough() {
+                    this._wrap("~~", "~~");
+                },
+                insertHorizontalRule() {
+                    const ta = this.$refs.editorTextarea;
+                    if (!ta) return;
+                    const s = ta.selectionStart;
+                    this.editor.content =
+                        this.editor.content.slice(0, s) +
+                        "\n---\n" +
+                        this.editor.content.slice(s);
+                    this.markDirty();
+                    this.queueDraftSave();
+                    this.queuePreviewRender();
+                },
+                insertNumberedList() {
+                    this._wrap("\n1. ", "");
+                },
+                insertTaskList() {
+                    this._wrap("\n- [ ] ", "");
+                },
+                insertCallout() {
+                    const ta = this.$refs.editorTextarea;
+                    if (!ta) return;
+                    const s = ta.selectionStart;
+                    this.editor.content =
+                        this.editor.content.slice(0, s) +
+                        "\n> [!NOTE]\n> Important insight here.\n" +
+                        this.editor.content.slice(s);
+                    this.markDirty();
+                    this.queueDraftSave();
+                    this.queuePreviewRender();
+                },
+                insertDetails() {
+                    const ta = this.$refs.editorTextarea;
+                    if (!ta) return;
+                    const s = ta.selectionStart;
+                    this.editor.content =
+                        this.editor.content.slice(0, s) +
+                        "\n:::details Section Title\ncontent here\n:::\n" +
+                        this.editor.content.slice(s);
+                    this.markDirty();
+                    this.queueDraftSave();
+                    this.queuePreviewRender();
+                },
+                insertHexDump() {
+                    const ta = this.$refs.editorTextarea;
+                    if (!ta) return;
+                    const s = ta.selectionStart;
+                    this.editor.content =
+                        this.editor.content.slice(0, s) +
+                        "[[hex:4D5A9000]]\n" +
+                        this.editor.content.slice(s);
+                    this.markDirty();
+                    this.queueDraftSave();
+                    this.queuePreviewRender();
+                },
+                insertMermaid() {
+                    const ta = this.$refs.editorTextarea;
+                    if (!ta) return;
+                    const s = ta.selectionStart;
+                    this.editor.content =
+                        this.editor.content.slice(0, s) +
+                        "\n```mermaid\ngraph TD;\n    A-->B;\n```\n" +
+                        this.editor.content.slice(s);
+                    this.markDirty();
+                    this.queueDraftSave();
+                    this.queuePreviewRender();
+                },
                 insertBold() {
                     this._wrap("**", "**");
                 },
