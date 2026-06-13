@@ -1328,22 +1328,6 @@ kbd {
 }
 
 /* Home page glass elements in modern theme */
-.theme-modern .home-hero {
-  background: rgba(28, 29, 43, 0.25);
-  border-radius: var(--radius-lg);
-  padding: 2rem 2.5rem;
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  margin-bottom: 4rem;
-}
-
-@media (max-width: 700px) {
-  .theme-modern .home-hero {
-    padding: 1.2rem 1.2rem;
-  }
-}
-
 .theme-modern .tag-bar {
   background: rgba(28, 29, 43, 0.2);
   border-radius: var(--radius);
@@ -1374,21 +1358,6 @@ kbd {
   color: var(--text-head);
 }
 
-.theme-modern .reading-article {
-  background: rgba(28, 29, 43, 0.2);
-  border-radius: var(--radius-lg);
-  padding: 2.5rem 3rem;
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-@media (max-width: 700px) {
-  .theme-modern .reading-article {
-    padding: 1.2rem 1rem;
-  }
-}
-
 .theme-modern .reading-title {
   border-bottom-color: rgba(189, 147, 249, 0.15);
 }
@@ -1407,6 +1376,7 @@ kbd {
 .theme-modern .hero-tag {
   color: var(--link);
   letter-spacing: 0.12em;
+  text-shadow: 0 0 20px rgba(139, 233, 253, 0.2);
 }
 
 .theme-modern .hero-desc {
@@ -1415,10 +1385,11 @@ kbd {
 }
 
 .theme-modern .hero-title {
-  background: linear-gradient(135deg, var(--text-head) 0%, var(--accent) 50%, var(--link) 100%);
+  background: linear-gradient(135deg, var(--text-head) 0%, var(--accent) 40%, var(--link) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  text-shadow: 0 0 40px rgba(189, 147, 249, 0.1);
 }
 
 .theme-modern ::selection {
