@@ -1383,10 +1383,7 @@
                         if (lines.length > 1) {
                             const last = lines[lines.length - 1];
                             if (last.trim() === "") lines.pop();
-                            codeEl.innerHTML = lines
-                                .map((ln, i) => `<span class="hljs-ln-line"><span class="hljs-ln-n">${i + 1}</span>${ln || " "}</span>`)
-                                .join("\n");
-                            preEl.classList.add("hljs-ln-wrap");
+                            codeEl.innerHTML = lines.join("\n");
                         }
                     });
 
@@ -1647,32 +1644,6 @@
                                 alert("Failed to copy code. Your browser might be blocking the clipboard.");
                             });
                         }
-                        return;
-                    }
-
-                    const lineEl = event.target.closest(".hljs-ln-line");
-                    if (lineEl) {
-                        const codeEl = lineEl.closest("code");
-                        const lineText = lineEl.textContent.replace(/^\s*\d+\s*/, "");
-                        const performCopy = () => {
-                            return new Promise((resolve, reject) => {
-                                const ta = document.createElement("textarea");
-                                ta.value = lineText;
-                                ta.style.position = "fixed";
-                                ta.style.left = "-9999px";
-                                ta.style.top = "-9999px";
-                                document.body.appendChild(ta);
-                                ta.focus();
-                                ta.select();
-                                let success = false;
-                                try { success = document.execCommand("copy"); } catch (e) { }
-                                document.body.removeChild(ta);
-                                if (success) { resolve(); }
-                                else if (navigator.clipboard) { navigator.clipboard.writeText(lineText).then(resolve).catch(reject); }
-                                else { reject(); }
-                            });
-                        };
-                        performCopy().then(() => this.showCopyToast("Line copied!")).catch(() => {});
                         return;
                     }
 
