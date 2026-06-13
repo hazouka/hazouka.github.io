@@ -60,6 +60,16 @@ body {
   height: 100vh;
 }
 
+a {
+  color: var(--link);
+  text-decoration: none;
+  transition: all var(--transition);
+}
+a:hover {
+  color: #b2f0ff;
+  text-decoration: underline;
+}
+
 button {
   cursor: pointer;
   font-family: inherit;
@@ -1114,6 +1124,18 @@ kbd {
   background: rgba(166, 227, 161, 0.1);
   border-color: rgba(166, 227, 161, 0.2);
   color: var(--d-green);
+}
+
+/* Links in markdown content */
+.markdown-body a {
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  text-decoration-color: rgba(139, 233, 253, 0.25);
+}
+.markdown-body a:hover {
+  color: #b2f0ff;
+  text-decoration-color: rgba(139, 233, 253, 0.6);
 }
 
 /* Blockquotes */
