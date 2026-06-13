@@ -1155,6 +1155,32 @@ kbd {
 .callout-caution { border-left-color: var(--d-pink); background: rgba(243, 139, 168, 0.06); }
 .callout-important { border-left-color: var(--accent); background: rgba(189, 147, 249, 0.06); }
 
+/* Tables */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  font-size: 0.9rem;
+}
+.markdown-body th,
+.markdown-body td {
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+.markdown-body th {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  color: var(--text-head);
+  background: var(--bg-panel);
+}
+.markdown-body td {
+  color: var(--text);
+}
+.markdown-body tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.015);
+}
+
 /* Mermaid diagrams */
 .mermaid {
   background: #1e1e2e;
