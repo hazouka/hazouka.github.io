@@ -222,13 +222,6 @@
                     </div>
                 </section>
             </article>
-            <aside class="reading-toc" x-show="readingToc.length > 0">
-                <div class="toc-section-label">On this page</div>
-                <template x-for="item in readingToc" :key="item.id">
-                    <button class="toc-item" @click="jumpReadingHeading(item.id)"
-                        :style="`padding-left: calc(0.6rem + ${(item.level-1)*10}px)`" x-text="item.text"></button>
-                </template>
-            </aside>
         </div>
     </div>
 
