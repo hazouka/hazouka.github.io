@@ -1842,3 +1842,279 @@ kbd {
 .markdown-body details > :not(summary) > :last-child {
   margin-bottom: 0;
 }
+
+/* Hex Dump Viewer */
+.hex-dump {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.6;
+  border-collapse: collapse;
+  margin: 1.2em 0;
+  width: 100%;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hex-dump th {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--d-comment);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.35rem 0.4rem;
+  background: #161b22;
+  border-bottom: 1px solid var(--border);
+  text-align: center;
+}
+
+.hex-dump .hex-offset-hdr,
+.hex-dump .hex-offset {
+  text-align: right;
+  color: var(--accent);
+  opacity: 0.7;
+  font-weight: 500;
+  padding: 0.15rem 0.6rem;
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+
+.hex-dump .hex-byte {
+  text-align: center;
+  padding: 0.15rem 0.2rem;
+  color: #cdd6f4;
+  font-weight: 400;
+  min-width: 1.8em;
+}
+
+.hex-dump .hex-empty {
+  opacity: 0.2;
+}
+
+.hex-dump .hex-ascii {
+  padding: 0.15rem 0.6rem;
+  border-left: 1px solid var(--border);
+  color: var(--d-comment);
+  font-size: 0.85em;
+}
+
+.hex-dump .hex-ascii-inner {
+  letter-spacing: 0.15em;
+}
+
+.hex-dump tbody tr:hover {
+  background: rgba(189, 147, 249, 0.04);
+}
+
+.hex-dump tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.hex-dump tbody tr:nth-child(even):hover {
+  background: rgba(189, 147, 249, 0.06);
+}
+
+.hex-error {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--d-pink);
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed rgba(243, 139, 168, 0.3);
+  border-radius: 4px;
+  background: rgba(243, 139, 168, 0.05);
+  margin: 1em 0;
+}
+
+/* Clickable code lines */
+.hljs-ln-line {
+  cursor: copy;
+  transition: background 0.08s;
+}
+
+.hljs-ln-line:hover {
+  background: rgba(189, 147, 249, 0.06);
+}
+
+.hljs-ln-line:active {
+  background: rgba(189, 147, 249, 0.12);
+}
+
+/* Formatting Guide Modal */
+.guide-card {
+  max-width: 520px !important;
+  text-align: left !important;
+  padding: 1.5rem 2rem !important;
+}
+
+.guide-scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+  margin: 0.5rem 0 1rem;
+}
+
+.guide-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: 0.78rem;
+}
+
+.guide-table tr {
+  border-bottom: 1px solid var(--border);
+}
+
+.guide-table tr:last-child {
+  border-bottom: none;
+}
+
+.guide-table td {
+  padding: 0.5rem 0.3rem;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.guide-syntax {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  white-space: nowrap;
+  padding-right: 1rem !important;
+  min-width: 160px;
+}
+
+.tb-help-btn {
+  color: var(--d-comment) !important;
+  border-color: transparent !important;
+  padding: 0.28rem 0.4rem !important;
+}
+
+.tb-help-btn:hover {
+  color: var(--accent) !important;
+  background: var(--accent-dim) !important;
+}
+
+/* General design refresh */
+.post-card {
+  position: relative;
+}
+
+.post-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 4px;
+  pointer-events: none;
+  transition: box-shadow 0.2s;
+}
+
+.post-card:hover::after {
+  box-shadow: inset 0 0 0 1px rgba(189, 147, 249, 0.15);
+}
+
+.post-card-title {
+  font-size: 1.28rem;
+}
+
+.home-hero {
+  margin-bottom: 3rem;
+}
+
+.hero-title {
+  font-size: 3rem;
+  background: linear-gradient(135deg, var(--text-head) 0%, var(--accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-tag {
+  font-size: 0.68rem;
+  opacity: 0.8;
+}
+
+/* Toolbar refresh */
+.toolbar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.tb-btn {
+  font-size: 0.62rem;
+  padding: 0.25rem 0.48rem;
+  border-radius: 3px;
+}
+
+.tb-lang {
+  font-weight: 600;
+}
+
+/* Reading view refresh */
+.reading-title {
+  font-size: 2.6rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.2rem;
+}
+
+.reading-meta {
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+}
+
+.markdown-body {
+  font-size: 1.08rem;
+  line-height: 1.8;
+}
+
+.markdown-body h2 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4rem;
+}
+
+/* Scrollbar refresh */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-hi);
+  border-radius: 3px;
+}
+
+/* Modal card refresh */
+.modal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-hi);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+/* Pane bar refresh */
+.pane-bar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Code block language label */
+.markdown-body pre::before {
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+}
+
+/* Theme pill refresh */
+.theme-toggle-pill {
+  background: var(--bg-alt);
+  border-color: var(--border);
+}
+
+/* Editor textarea */
+.editor-ta {
+  font-size: 0.85rem;
+  line-height: 2;
+}
+
+/* Pane scroll padding */
+.pane-scroll {
+  padding: 1.6rem 1.5rem;
+}
