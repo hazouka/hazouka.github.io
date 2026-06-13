@@ -32,7 +32,6 @@
 
 <body x-data="blogApp" :class="theme === 'modern' ? 'theme-modern' : ''" @keydown.window="handleShortcut($event)"
     @paste.window="handleEditorPaste($event)">
-    <div class="reading-progress" x-show="view === 'reading'" :style="`width: ${readingProgress}%`"></div>
     <header class="site-header">
         <div class="header-left">
             <button class="site-logo" @click="goHome()">
@@ -445,7 +444,6 @@
                 lightboxOpen: false,
                 lightboxSrc: "",
                 showFormatGuide: false,
-                readingProgress: 0,
                 readingActiveSection: 0,
                 _readingScrollTimer: null,
                 syncErrorMessage: "",
@@ -532,8 +530,7 @@
                         const el = this.$refs.readingView;
                         if (!el) return;
                         const total = el.scrollHeight - el.clientHeight;
-                        if (total <= 0) { this.readingProgress = 100; return; }
-                        this.readingProgress = Math.min(100, Math.round((el.scrollTop / total) * 100));
+                        if (total <= 0) return;
                         const toc = this.readingToc;
                         if (!toc.length) return;
                         for (let i = toc.length - 1; i >= 0; i--) {
@@ -2099,7 +2096,6 @@
                 },
 
                 openReading(post) {
-                    this.readingProgress = 0;
                     this.readingActiveSection = 0;
                     this.reading = { ...post };
                     this.view = "reading";

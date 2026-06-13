@@ -1685,18 +1685,6 @@ kbd {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Reading Progress Bar */
-.reading-progress {
-  position: fixed;
-  top: 0;
-  left: 0;
-  height: 2px;
-  background: linear-gradient(90deg, var(--accent), var(--link));
-  z-index: 9999;
-  transition: width 0.1s linear;
-  pointer-events: none;
-}
-
 /* IDA Navigation Band */
 .ida-nav-band {
   display: flex;
