@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Control Access</title>
+    <style>
+      :root {
+        --bg: #0f1115;
+        --card: #171a21;
+        --line: #2d3342;
+        --text: #e7ebf3;
+        --muted: #a8b0c2;
+        --accent: #6fb3ff;
+        --danger: #ff7b7b;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Consolas, "Courier New", monospace;
+        background: radial-gradient(
+          circle at top right,
+          #1b2130 0%,
+          var(--bg) 55%
+        );
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+      }
+      .card {
+        width: min(760px, 100%);
+        border: 1px solid var(--line);
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(255, 255, 255, 0)
+        );
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 12px 45px rgba(0, 0, 0, 0.3);
+      }
+      h1 {
+        margin: 0 0 12px;
+        font-size: 1.1rem;
+        letter-spacing: 0.03em;
+      }
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+      .full {
+        grid-column: 1 / -1;
+      }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin: 0 0 6px;
+      }
+      input {
+        width: 100%;
+        padding: 10px 11px;
+        background: #0d1017;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--text);
+        outline: none;
+      }
+      input:focus {
+        border-color: var(--accent);
+      }
+      .actions {
+        margin-top: 16px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      button {
+        border: 1px solid var(--line);
+        background: #0f141f;
+        color: var(--text);
+        border-radius: 8px;
+        padding: 9px 12px;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .primary {
+        background: linear-gradient(180deg, #2b76d4, #225faa);
+        border-color: #2f74cb;
+      }
+      .danger {
+        border-color: #7f2d2d;
+        color: var(--danger);
+      }
+      .note {
+        margin-top: 10px;
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+      @media (max-width: 700px) {
+        body {
+          padding: 12px;
+        }
+        .card {
+          padding: 14px;
+        }
+        .grid {
+          grid-template-columns: 1fr;
+        }
+        .actions {
+          flex-direction: column;
+        }
+        .actions button {
+          width: 100%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>Admin Control Page</h1>
+      <p>
+        This page stores admin GitHub settings in your browser only. Do not
+        share this URL.
+      </p>
+
+      <form id="adminForm" class="grid">
+        <div class="full">
+          <label for="token"
+            >GitHub Fine-Grained Token (repo contents: read+write)</label
+          >
+          <input
+            id="token"
+            name="token"
+            type="password"
+            autocomplete="off"
+            required
+          />
+        </div>
+        <div>
+          <label for="owner">Owner</label>
+          <input id="owner" name="owner" required />
+        </div>
+        <div>
+          <label for="repo">Repository</label>
+          <input id="repo" name="repo" required />
+        </div>
+        <div>
+          <label for="branch">Branch</label>
+          <input id="branch" name="branch" value="main" required />
+        </div>
+        <div>
+          <label for="postsPath">Posts JSON Path</label>
+          <input id="postsPath" name="postsPath" value="posts.json" required />
+        </div>
+        <div class="full">
+          <label for="uploadsDir">Uploads Folder</label>
+          <input id="uploadsDir" name="uploadsDir" value="uploads" required />
+        </div>
+
+        <div class="actions full">
+          <button class="primary" type="submit">Save And Open Blog</button>
+          <button type="button" id="testBtn">Test Token</button>
+          <button class="danger" type="button" id="clearBtn">
+            Clear Admin Session
+          </button>
+        </div>
+      </form>
+
+      <p class="note">
+        Token is stored in localStorage on this device. Use a dedicated token
+        for this repo only.
+      </p>
+    </main>
+
+    <script>
+      (() => {
+        const STORAGE_KEY = "re-blog-github-settings-v1";
+        const form = document.getElementById("adminForm");
+        const tokenEl = document.getElementById("token");
+        const ownerEl = document.getElementById("owner");
+        const repoEl = document.getElementById("repo");
+        const branchEl = document.getElementById("branch");
+        const postsPathEl = document.getElementById("postsPath");
+        const uploadsDirEl = document.getElementById("uploadsDir");
+
+        function inferDefaults() {
+          const host = window.location.hostname || "";
+          const pathParts = window.location.pathname.split("/").filter(Boolean);
+          if (host.endsWith(".github.io")) {
+            const owner = host.split(".")[0] || "";
+            const repo = pathParts[0] || `${owner}.github.io`;
+            return { owner, repo };
+          }
+          return { owner: "", repo: "" };
+        }
+
+        function loadSettings() {
+          let saved = {};
+          try {
+            saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {};
+          } catch (err) {
+            saved = {};
+          }
+          const defaults = inferDefaults();
+          tokenEl.value = saved.token || "";
+          ownerEl.value = saved.owner || defaults.owner || "";
+          repoEl.value = saved.repo || defaults.repo || "";
+          branchEl.value = saved.branch || "main";
+          postsPathEl.value = saved.postsPath || "posts.json";
+          uploadsDirEl.value = saved.uploadsDir || "uploads";
+        }
+
+        function currentPayload() {
+          return {
+            token: tokenEl.value.trim(),
+            owner: ownerEl.value.trim(),
+            repo: repoEl.value.trim(),
+            branch: branchEl.value.trim() || "main",
+            postsPath: postsPathEl.value.trim() || "posts.json",
+            uploadsDir: uploadsDirEl.value.trim() || "uploads",
+          };
+        }
+
+        function saveSettings() {
+          const payload = currentPayload();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          return payload;
+        }
+
+        form.addEventListener("submit", (event) => {
+          event.preventDefault();
+          const payload = saveSettings();
+          if (!payload.token || !payload.owner || !payload.repo) {
+            alert("Token, owner, and repo are required.");
+            return;
+          }
+          window.location.href = "index.html";
+        });
+
+        document.getElementById("clearBtn").addEventListener("click", () => {
+          localStorage.removeItem(STORAGE_KEY);
+          loadSettings();
+          alert("Admin session cleared.");
+        });
+
+        document
+          .getElementById("testBtn")
+          .addEventListener("click", async () => {
+            const payload = currentPayload();
+            if (!payload.token || !payload.owner || !payload.repo) {
+              alert("Enter token, owner, and repo first.");
+              return;
+            }
+            const url = `https://api.github.com/repos/${encodeURIComponent(payload.owner)}/${encodeURIComponent(payload.repo)}`;
+            const res = await fetch(url, {
+              headers: {
+                Accept: "application/vnd.github+json",
+                Authorization: `Bearer ${payload.token}`,
+                "X-GitHub-Api-Version": "2022-11-28",
+              },
+            });
+            if (res.ok) {
+              alert("Token works for this repository.");
+            } else {
+              alert(`Token test failed (${res.status}).`);
+            }
+          });
+
+        loadSettings();
+      })();
+    </script>
+  </body>
+</html>
