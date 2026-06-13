@@ -30,7 +30,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 
-<body x-data="blogApp" :class="theme === 'modern' ? 'theme-modern' : ''" @keydown.window="handleShortcut($event)"
+<body x-data="blogApp" @keydown.window="handleShortcut($event)"
     @paste.window="handleEditorPaste($event)">
     <header class="site-header">
         <div class="header-left">
@@ -52,12 +52,6 @@
             <template x-if="view === 'home'">
                 <div class="hdr-actions">
                     <input class="search-hdr" type="text" x-model="topicQuery" placeholder="Search entries..." />
-                    <div class="theme-toggle-pill" title="Switch Theme">
-                        <button class="theme-pill-btn" :class="theme !== 'modern' ? 'theme-pill-active' : ''"
-                            @click="theme !== 'modern' ? null : toggleTheme()">Classic</button>
-                        <button class="theme-pill-btn" :class="theme === 'modern' ? 'theme-pill-active' : ''"
-                            @click="theme === 'modern' ? null : toggleTheme()">Modern</button>
-                    </div>
                     <button class="btn btn-ghost" x-show="isAdmin" @click="logoutAdmin()">
                         Logout
                     </button>
@@ -401,11 +395,6 @@
             const DELETED_IDS_KEY = "re-blog-deleted-ids-v1";
 
             Alpine.data("blogApp", () => ({
-                theme: localStorage.getItem("re-blog-theme") || "modern",
-                toggleTheme() {
-                    this.theme = this.theme === "modern" ? "classic" : "modern";
-                    localStorage.setItem("re-blog-theme", this.theme);
-                },
                 posts: [],
                 view: "home",
                 editor: { id: null, title: "", content: "", tagsText: "", published: true, isDirty: false },
