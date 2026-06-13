@@ -1099,6 +1099,10 @@ kbd {
   border-collapse: collapse;
   margin: 1.2em 0;
   font-size: 0.9rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 .markdown-body th,
 .markdown-body td {
@@ -1117,6 +1121,9 @@ kbd {
 }
 .markdown-body tr:nth-child(even) td {
   background: rgba(255, 255, 255, 0.015);
+}
+.markdown-body tbody tr:hover td {
+  background: var(--bg-hover);
 }
 
 /* Mermaid diagrams */
@@ -1179,6 +1186,14 @@ kbd {
   border: 1px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
+}
+
+.hex-dump thead th:first-child {
+  border-radius: 4px 0 0 0;
+}
+
+.hex-dump thead th:last-child {
+  border-radius: 0 4px 0 0;
 }
 
 .hex-dump th {
@@ -1268,6 +1283,10 @@ kbd {
   border-collapse: collapse;
   font-family: var(--font-ui);
   font-size: 0.78rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .guide-table tr {
@@ -1276,6 +1295,14 @@ kbd {
 
 .guide-table tr:last-child {
   border-bottom: none;
+}
+
+.guide-table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.015);
+}
+
+.guide-table tr:hover {
+  background: var(--bg-hover);
 }
 
 .guide-table td {
