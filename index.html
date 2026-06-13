@@ -569,13 +569,16 @@
                     this.loadImageAssets();
                     this.loadImageGithubPaths();
                     this.restoreGithubSettings();
-                    await this.validateGithubSession();
+                    // Load local cache instantly, refresh in background
+                    const cached = this.readLocalPosts();
+                    this.posts = this.sortPosts(cached);
                     this.restoreDraft();
-                    await this.loadPosts();
-                    this.cleanupOrphanedAssets();
                     this.openPostFromUrl();
+                    this.cleanupOrphanedAssets();
                     this._previewContent = this.editor.content;
                     this.previewHtml = this.renderMarkdown(this.editor.content || this.emptyPreviewContent);
+                    // Background: validate session + fetch fresh posts
+                    this.validateGithubSession().finally(() => this.refreshPosts());
                 },
 
                 showConfirmModal(title, message, actionLabel = "Delete") {
@@ -1864,36 +1867,40 @@
                     return Array.isArray(posts) ? posts : null;
                 },
 
-                async loadPosts() {
-                    const localPosts = this.readLocalPosts();
-                    this.posts = this.sortPosts(localPosts);
+                loadLocalPosts() {
+                    this.posts = this.sortPosts(this.readLocalPosts());
+                },
 
+                syncReadingView() {
+                    if (this.view === "reading" && this.reading?.id) {
+                        const fresh = this.posts.find(p => String(p.id) === String(this.reading.id));
+                        if (fresh) this.reading = { ...fresh };
+                    }
+                },
+
+                async refreshPosts() {
                     try {
                         const apiPosts = await this.fetchPostsViaApi();
                         if (apiPosts) {
                             this.posts = this.sortPosts(apiPosts);
                             this.writeLocalPosts(this.posts);
+                            this.syncReadingView();
                             return;
                         }
-                    } catch (e) { }
-
+                    } catch (e) {}
                     try {
-                        const postsUrl = new URL(
-                            this.githubPostsPath,
-                            window.location.href,
-                        );
+                        const postsUrl = new URL(this.githubPostsPath, window.location.href);
                         postsUrl.searchParams.set("t", String(Date.now()));
-                        const res = await fetch(postsUrl.toString(), {
-                            cache: "no-store",
-                        });
+                        const res = await fetch(postsUrl.toString(), { cache: "no-store" });
                         if (!res.ok) return;
                         const remotePosts = await res.json();
                         if (Array.isArray(remotePosts)) {
-                            const merged = this.mergePosts(localPosts, remotePosts);
+                            const merged = this.mergePosts(this.posts, remotePosts);
                             this.posts = merged;
                             this.writeLocalPosts(merged);
+                            this.syncReadingView();
                         }
-                    } catch (e) { }
+                    } catch (e) {}
                 },
 
                 savePosts() {

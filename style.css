@@ -86,8 +86,8 @@ textarea {
 
 .site-header {
   height: var(--header-h);
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -99,6 +99,22 @@ textarea {
   right: 0;
   width: 100%;
   z-index: 100;
+}
+
+.site-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: calc(var(--header-h) + 40px);
+  background: linear-gradient(to bottom, var(--bg) 20%, transparent 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .header-left {
@@ -513,33 +529,16 @@ textarea {
 }
 
 .post-card {
-  border-bottom: 1px solid var(--border);
-  padding: 1.6rem 0;
+  border-bottom: none;
+  padding: 1.6rem 1.2rem;
+  margin: 0 -1.2rem;
+  border-radius: var(--radius);
   cursor: pointer;
-  transition: all var(--transition);
-  position: relative;
-  padding-left: 1rem;
-}
-
-.post-card::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 1.6rem;
-  bottom: 1.6rem;
-  width: 2px;
-  background: var(--border);
-  border-radius: 1px;
   transition: all var(--transition);
 }
 
 .post-card:hover {
-  padding-left: 1.2rem;
-}
-
-.post-card:hover::before {
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--accent-glow);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .post-card:hover .post-card-title {
@@ -1306,28 +1305,6 @@ kbd {
   background-attachment: fixed;
 }
 
-.theme-modern .site-header {
-  background: transparent;
-  border-bottom: none;
-}
-
-.theme-modern .site-header::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: calc(var(--header-h) + 40px);
-  background: linear-gradient(to bottom, var(--bg) 20%, transparent 100%);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Home page glass elements in modern theme */
 .theme-modern .tag-bar {
   background: rgba(28, 29, 43, 0.2);
   border-radius: var(--radius);
@@ -1335,31 +1312,6 @@ kbd {
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-}
-
-.theme-modern .post-card {
-  border-bottom: none;
-  padding-left: 0;
-  padding: 1.6rem 1.2rem;
-  margin: 0 -1.2rem;
-  border-radius: var(--radius);
-  transition: all var(--transition);
-}
-
-.theme-modern .post-card::before {
-  display: none;
-}
-
-.theme-modern .post-card:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.theme-modern .post-card:hover .post-card-title {
-  color: var(--text-head);
-}
-
-.theme-modern .reading-title {
-  border-bottom-color: rgba(189, 147, 249, 0.15);
 }
 
 .theme-modern .markdown-body pre {
