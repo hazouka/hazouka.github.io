@@ -192,12 +192,10 @@
     </main>
 
     <div class="view" x-show="view === 'reading'" @scroll.passive="updateReadingProgress()" x-ref="readingView">
-        <div class="reading-layout">
+            <div class="reading-layout">
             <article class="reading-article">
                 <div class="reading-meta">
                     <span x-text="reading.date"></span>
-                    <span>&middot;</span>
-                    <span x-text="Math.max(1, Math.round(countWords(reading.content)/200)) + ' min read'"></span>
                     <template x-if="reading.published === false">
                         <span class="draft-badge">Draft</span>
                     </template>
@@ -1622,7 +1620,14 @@
                             };
 
                             performCopy().then(() => {
-                                this.showCopyToast("Code copied!");
+                                const orig = copyBtn.innerHTML;
+                                copyBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                                copyBtn.classList.add("copy-done");
+                                setTimeout(() => {
+                                    copyBtn.innerHTML = orig;
+                                    copyBtn.classList.remove("copy-done");
+                                }, 1400);
+                                this.showCopyToast("Copied!");
                             }).catch(() => {
                                 alert("Failed to copy code. Your browser might be blocking the clipboard.");
                             });

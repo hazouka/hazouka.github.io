@@ -86,9 +86,8 @@ textarea {
 
 .site-header {
   height: var(--header-h);
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--glass-border);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -100,21 +99,6 @@ textarea {
   right: 0;
   width: 100%;
   z-index: 100;
-}
-
-.site-header::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  pointer-events: none;
-  z-index: -1;
 }
 
 .header-left {
@@ -1088,8 +1072,11 @@ kbd {
   color: var(--text-dim);
   cursor: pointer;
   opacity: 0;
-  transition: opacity var(--transition);
+  transition: all var(--transition);
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .markdown-body pre:hover .copy-code-btn {
@@ -1099,6 +1086,12 @@ kbd {
 .copy-code-btn:hover {
   background: rgba(255,255,255,0.1);
   color: var(--text);
+}
+
+.copy-code-btn.copy-done {
+  background: rgba(166, 227, 161, 0.1);
+  border-color: rgba(166, 227, 161, 0.2);
+  color: var(--d-green);
 }
 
 /* Mermaid diagrams */
@@ -1305,6 +1298,95 @@ kbd {
 .post-card {
   animation: fadeUp 0.4s ease-out backwards;
   position: relative;
+}
+
+/* Modern Theme */
+.theme-modern {
+  background: radial-gradient(circle at 10% 10%, rgba(189, 147, 249, 0.12) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(139, 233, 253, 0.1) 0%, transparent 40%), var(--bg);
+  background-attachment: fixed;
+}
+
+.theme-modern .site-header {
+  background: transparent;
+  border-bottom: none;
+}
+
+.theme-modern .site-header::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Home page glass elements in modern theme */
+.theme-modern .home-hero {
+  background: rgba(28, 29, 43, 0.25);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2.5rem;
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  margin-bottom: 4rem;
+}
+
+@media (max-width: 700px) {
+  .theme-modern .home-hero {
+    padding: 1.2rem 1.2rem;
+  }
+}
+
+.theme-modern .tag-bar {
+  background: rgba(28, 29, 43, 0.2);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.theme-modern .post-card {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.theme-modern .post-card::before {
+  width: 2px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.theme-modern .post-card:hover::before {
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow), 0 0 16px var(--accent-glow);
+}
+
+.theme-modern .post-card:hover .post-card-title {
+  color: var(--text-head);
+}
+
+.theme-modern .reading-article {
+  background: rgba(28, 29, 43, 0.2);
+  border-radius: var(--radius-lg);
+  padding: 2.5rem 3rem;
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+@media (max-width: 700px) {
+  .theme-modern .reading-article {
+    padding: 1.2rem 1rem;
+  }
+}
+
+.theme-modern .reading-title {
+  border-bottom-color: rgba(189, 147, 249, 0.15);
 }
 
 /* Refine editor panes in theme-modern */
