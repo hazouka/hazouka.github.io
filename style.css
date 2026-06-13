@@ -1629,3 +1629,216 @@ kbd {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
+/* Reading Progress Bar */
+.reading-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--link));
+  z-index: 9999;
+  transition: width 0.1s linear;
+  pointer-events: none;
+}
+
+/* IDA Navigation Band */
+.ida-nav-band {
+  display: flex;
+  gap: 2px;
+  padding: 0.4rem 2rem;
+  background: var(--bg-alt);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: var(--header-h);
+  z-index: 50;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ida-nav-band::-webkit-scrollbar { display: none; }
+
+.ida-nav-seg {
+  height: 8px;
+  border-radius: 2px;
+  border: none;
+  background: var(--border);
+  cursor: pointer;
+  transition: all 0.15s;
+  min-width: 12px;
+  flex-shrink: 0;
+}
+
+.ida-nav-seg:hover {
+  background: var(--text-mute);
+  transform: scaleY(1.4);
+}
+
+.ida-nav-seg-active {
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(189, 147, 249, 0.4);
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+
+.lightbox-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.6rem;
+  cursor: pointer;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.lightbox-close:hover {
+  color: var(--text);
+}
+
+/* Related Posts */
+.related-section {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.related-heading {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+}
+
+.related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+
+.related-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.related-card:hover {
+  border-color: var(--border-hi);
+  background: var(--bg-hover);
+}
+
+.related-card-title {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.35rem;
+  line-height: 1.35;
+}
+
+.related-card-meta {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+
+/* Line numbers for code blocks */
+.hljs-ln-wrap {
+  padding-left: 0 !important;
+}
+
+.hljs-ln-wrap code {
+  padding-left: 0 !important;
+}
+
+.hljs-ln-line {
+  display: block;
+  line-height: inherit;
+  padding: 0 1.1rem 0 0;
+}
+
+.hljs-ln-n {
+  display: inline-block;
+  min-width: 2.6em;
+  padding-right: 1em;
+  text-align: right;
+  color: var(--d-comment);
+  user-select: none;
+  opacity: 0.4;
+  font-size: 0.85em;
+}
+
+/* Mermaid diagrams */
+.mermaid {
+  background: #1e1e2e;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 1.5rem 1rem;
+  margin: 1.6em 0;
+  overflow-x: auto;
+  text-align: center;
+}
+
+/* Collapsible details */
+.markdown-body details {
+  margin: 1.5em 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.markdown-body summary {
+  font-family: var(--font-ui);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--link);
+  cursor: pointer;
+  padding: 0.7rem 1rem;
+  background: var(--bg-panel);
+  border-bottom: 1px solid transparent;
+  transition: all 0.12s;
+}
+
+.markdown-body summary:hover {
+  background: var(--bg-hover);
+  color: #b2f0ff;
+}
+
+.markdown-body details[open] summary {
+  border-bottom-color: var(--border);
+}
+
+.markdown-body details > :not(summary) {
+  padding: 0.5rem 1rem 0.8rem;
+}
+
+.markdown-body details > :not(summary) > :last-child {
+  margin-bottom: 0;
+}
