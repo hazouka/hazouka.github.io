@@ -1116,6 +1116,45 @@ kbd {
   color: var(--d-green);
 }
 
+/* Blockquotes */
+.markdown-body blockquote {
+  border-left: 3px solid var(--accent);
+  margin: 1.2em 0;
+  padding: 0.6rem 1rem 0.6rem 1.2rem;
+  background: rgba(189, 147, 249, 0.06);
+  border-radius: 0 4px 4px 0;
+  color: var(--text-dim);
+}
+.markdown-body blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Callout / alerts */
+.callout {
+  margin: 1.2em 0;
+  padding: 0.8rem 1rem 0.8rem 1.2rem;
+  border-radius: 4px;
+  border-left: 3px solid;
+  font-size: 0.95rem;
+  background: rgba(189, 147, 249, 0.06);
+}
+.callout::before {
+  content: attr(data-type);
+  display: block;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.4rem;
+}
+.callout p:last-child { margin-bottom: 0; }
+.callout-note { border-left-color: var(--link); background: rgba(139, 233, 253, 0.06); }
+.callout-tip { border-left-color: var(--d-green); background: rgba(166, 227, 161, 0.06); }
+.callout-warning { border-left-color: var(--d-yellow); background: rgba(249, 226, 175, 0.06); }
+.callout-caution { border-left-color: var(--d-pink); background: rgba(243, 139, 168, 0.06); }
+.callout-important { border-left-color: var(--accent); background: rgba(189, 147, 249, 0.06); }
+
 /* Mermaid diagrams */
 .mermaid {
   background: #1e1e2e;

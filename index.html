@@ -1326,6 +1326,21 @@
                         h.id = `h-${base}${seen[base] > 1 ? "-" + seen[base] : ""}`;
                     });
 
+                    temp.querySelectorAll("blockquote").forEach((bq) => {
+                        const p = bq.querySelector("p");
+                        if (!p) return;
+                        const m = p.textContent.match(/^\[!(NOTE|TIP|WARNING|CAUTION|IMPORTANT)\]\s*/i);
+                        if (!m) return;
+                        const type = m[1].toLowerCase();
+                        p.textContent = p.textContent.replace(/^\[!(NOTE|TIP|WARNING|CAUTION|IMPORTANT)\]\s*/i, "");
+                        const div = document.createElement("div");
+                        div.className = `callout callout-${type}`;
+                        div.setAttribute("data-type", m[1]);
+                        while (bq.firstChild) div.appendChild(bq.firstChild);
+                        if (!p.textContent.trim() && !p.children.length) p.remove();
+                        bq.replaceWith(div);
+                    });
+
                     temp.querySelectorAll("pre code").forEach((codeEl) => {
                         const preEl = codeEl.parentNode;
                         const match = (codeEl.className || "").match(/language-([\w-]+)/);
