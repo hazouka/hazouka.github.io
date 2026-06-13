@@ -1317,11 +1317,12 @@ kbd {
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  background: var(--glass-bg);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid var(--glass-border);
+  height: calc(var(--header-h) + 40px);
+  background: linear-gradient(to bottom, var(--bg) 20%, transparent 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  -webkit-mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 50%, transparent 100%);
   pointer-events: none;
   z-index: -1;
 }
@@ -1353,17 +1354,20 @@ kbd {
 }
 
 .theme-modern .post-card {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  border-bottom: none;
+  padding-left: 0;
+  padding: 1.6rem 1.2rem;
+  margin: 0 -1.2rem;
+  border-radius: var(--radius);
+  transition: all var(--transition);
 }
 
 .theme-modern .post-card::before {
-  width: 2px;
-  background: rgba(255, 255, 255, 0.08);
+  display: none;
 }
 
-.theme-modern .post-card:hover::before {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow), 0 0 16px var(--accent-glow);
+.theme-modern .post-card:hover {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .theme-modern .post-card:hover .post-card-title {
@@ -1387,6 +1391,39 @@ kbd {
 
 .theme-modern .reading-title {
   border-bottom-color: rgba(189, 147, 249, 0.15);
+}
+
+.theme-modern .markdown-body pre {
+  border-color: rgba(189, 147, 249, 0.1);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+}
+
+.theme-modern .markdown-body pre::before {
+  background: rgba(22, 27, 34, 0.9);
+  border-bottom-color: rgba(189, 147, 249, 0.08);
+  color: var(--accent);
+}
+
+.theme-modern .hero-tag {
+  color: var(--link);
+  letter-spacing: 0.12em;
+}
+
+.theme-modern .hero-desc {
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.theme-modern .hero-title {
+  background: linear-gradient(135deg, var(--text-head) 0%, var(--accent) 50%, var(--link) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.theme-modern ::selection {
+  background: rgba(189, 147, 249, 0.25);
+  color: var(--text-head);
 }
 
 /* Refine editor panes in theme-modern */
