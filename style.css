@@ -1685,43 +1685,6 @@ kbd {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* IDA Navigation Band */
-.ida-nav-band {
-  display: flex;
-  gap: 2px;
-  padding: 0.4rem 2rem;
-  background: var(--bg-alt);
-  border-bottom: 1px solid var(--border);
-  position: sticky;
-  top: var(--header-h);
-  z-index: 50;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.ida-nav-band::-webkit-scrollbar { display: none; }
-
-.ida-nav-seg {
-  height: 8px;
-  border-radius: 2px;
-  border: none;
-  background: var(--border);
-  cursor: pointer;
-  transition: all 0.15s;
-  min-width: 12px;
-  flex-shrink: 0;
-}
-
-.ida-nav-seg:hover {
-  background: var(--text-mute);
-  transform: scaleY(1.4);
-}
-
-.ida-nav-seg-active {
-  background: var(--accent);
-  box-shadow: 0 0 6px rgba(189, 147, 249, 0.4);
-}
-
 /* Lightbox */
 .lightbox {
   position: fixed;

@@ -192,13 +192,6 @@
     </main>
 
     <div class="view" x-show="view === 'reading'" @scroll.passive="updateReadingProgress()" x-ref="readingView">
-        <div class="ida-nav-band" x-show="readingToc.length > 1">
-            <template x-for="(item, i) in readingToc" :key="item.id">
-                <button class="ida-nav-seg" @click="jumpReadingHeading(item.id)"
-                    :class="i === readingActiveSection ? 'ida-nav-seg-active' : ''"
-                    :style="`flex: ${item.text.length + 2}`" :title="item.text"></button>
-            </template>
-        </div>
         <div class="reading-layout">
             <article class="reading-article">
                 <div class="reading-meta">
