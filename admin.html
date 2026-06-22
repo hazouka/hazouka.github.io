@@ -265,11 +265,18 @@ title: Admin
 
   async function getFile(path) { try { return await ghFetch('/contents/' + encodeURIComponent(path)); } catch(e) { return null; } }
 
-  async function saveFile(path, content, message) {
-    const existing = await getFile(path);
-    const body = { message: message || 'Update post via admin', content: btoa(unescape(encodeURIComponent(content))), branch: getConfig().branch };
+  async function saveFile(path, content, message, retried) {
+    var existing = await getFile(path);
+    var body = { message: message || 'Update post via admin', content: btoa(unescape(encodeURIComponent(content))), branch: getConfig().branch };
     if (existing && existing.sha) body.sha = existing.sha;
-    return await ghFetch('/contents/' + encodeURIComponent(path), { method: 'PUT', body: JSON.stringify(body) });
+    try {
+      return await ghFetch('/contents/' + encodeURIComponent(path), { method: 'PUT', body: JSON.stringify(body) });
+    } catch(e) {
+      if (!retried && e.message && e.message.indexOf('does not match') > -1) {
+        return await saveFile(path, content, message, true);
+      }
+      throw e;
+    }
   }
 
   async function deleteFile(path, message) {
