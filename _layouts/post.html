@@ -6,6 +6,7 @@ layout: default
   <article class="reading-article">
     <div class="reading-meta">
       <time datetime="{{ page.date | date_to_xmlschema }}">{{ page.date | date: "%B %d, %Y" }}</time>
+      <a href="{{ '/admin?edit=' | relative_url }}_posts/{{ page.date | date: '%Y-%m-%d' }}-{{ page.slug }}.md" class="btn btn-ghost" style="margin-left:auto;font-size:0.75rem;padding:0.2rem 0.6rem">Edit</a>
     </div>
     {% if page.tags.size > 0 %}
     <div class="reading-tags">

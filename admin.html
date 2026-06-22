@@ -302,7 +302,6 @@ title: Admin
     try {
       const data = await ghFetch('/contents/' + encodeURIComponent(path));
       const content = decodeURIComponent(escape(atob(data.content)));
-      // Parse front matter
       const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
       if (fmMatch) {
         const fm = fmMatch[1];
@@ -324,6 +323,7 @@ title: Admin
       showMsg('Failed to load post: ' + e.message, 'err');
     }
   }
+  window.editPost = editPost;
 
   async function deletePost(path) {
     if (!confirm('Delete ' + path + '?')) return;
@@ -345,6 +345,7 @@ title: Admin
       showMsg('Delete failed: ' + e.message, 'err');
     }
   }
+  window.deletePost = deletePost;
 
   $('postTitle').addEventListener('input', () => { updateSlug(); saveDraft(); });
   $('postDate').addEventListener('change', saveDraft);
@@ -443,6 +444,17 @@ title: Admin
         // Auto-login failed, show login form
       }
     })();
+  }
+
+  // Auto-edit from URL param
+  var editParam = new URLSearchParams(window.location.search).get('edit');
+  if (editParam) {
+    var waitForLogin = setInterval(function() {
+      if (typeof repo !== 'undefined' && $('editorSection').style.display === 'block') {
+        clearInterval(waitForLogin);
+        setTimeout(function() { window.editPost(editParam); }, 500);
+      }
+    }, 200);
   }
 })();
 </script>
