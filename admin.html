@@ -1,0 +1,453 @@
+---
+layout: default
+title: Admin
+---
+
+<style>
+  .admin-wrap { max-width: 900px; margin: 0 auto; }
+  .admin-wrap h1 { font-family: var(--font-ui); font-size: 1.6rem; color: var(--text-head); margin-bottom: 0.25rem; }
+  .admin-wrap p { color: var(--text-dim); margin-bottom: 2rem; font-size: 0.9rem; }
+  .admin-form { display: flex; flex-direction: column; gap: 1rem; }
+  .admin-form label { font-family: var(--font-ui); font-size: 0.8rem; color: var(--text-dim); display: block; margin-bottom: 0.3rem; }
+  .admin-form input, .admin-form textarea, .admin-form select {
+    width: 100%; padding: 0.6rem 0.8rem; background: var(--bg-alt);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text); font-family: var(--font-mono); font-size: 0.85rem; outline: none;
+  }
+  .admin-form input:focus, .admin-form textarea:focus { border-color: var(--accent); }
+  .admin-form textarea { min-height: 300px; resize: vertical; line-height: 1.6; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  .admin-actions { display: flex; gap: 0.75rem; margin-top: 0.5rem; flex-wrap: wrap; }
+  .admin-actions button { padding: 0.5rem 1.2rem; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-alt); color: var(--text); font-family: var(--font-ui); font-size: 0.85rem; cursor: pointer; }
+  .admin-actions button:hover { background: var(--bg-hover); }
+  .admin-actions .primary { background: var(--accent); color: #000; border-color: var(--accent); }
+  .admin-actions .primary:hover { filter: brightness(1.1); }
+  .admin-actions .danger { border-color: var(--d-red); color: var(--d-red); }
+
+  .admin-login { max-width: 400px; margin: 2rem auto; padding: 2rem; background: var(--bg-alt); border-radius: var(--radius-lg); border: 1px solid var(--border); }
+  .admin-login h2 { font-family: var(--font-ui); font-size: 1.1rem; color: var(--text-head); margin-bottom: 1rem; }
+  .admin-login .form-row { grid-template-columns: 1fr; }
+
+  .admin-posts { margin-top: 2rem; }
+  .admin-posts h2 { font-family: var(--font-ui); font-size: 1.1rem; color: var(--text-head); margin-bottom: 1rem; }
+  .admin-post-item { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0.8rem; border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 0.5rem; background: var(--bg-alt); }
+  .admin-post-item .title { font-family: var(--font-ui); font-size: 0.9rem; color: var(--text); }
+  .admin-post-item .date { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-dim); margin-left: 0.75rem; }
+  .admin-post-item .actions { display: flex; gap: 0.4rem; }
+  .admin-post-item .actions button { padding: 0.25rem 0.6rem; font-size: 0.75rem; }
+  .admin-msg { padding: 0.6rem 1rem; border-radius: var(--radius); font-family: var(--font-ui); font-size: 0.85rem; margin-bottom: 1rem; }
+  .admin-msg.ok { background: rgba(80, 250, 123, 0.1); border: 1px solid rgba(80, 250, 123, 0.2); color: var(--d-green); }
+  .admin-msg.err { background: rgba(255, 85, 85, 0.1); border: 1px solid rgba(255, 85, 85, 0.2); color: var(--d-red); }
+  .slug-preview { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-mute); margin-top: 0.25rem; }
+  .admin-preview { margin-top: 1rem; padding: 1rem; background: var(--bg-alt); border: 1px solid var(--border); border-radius: var(--radius); }
+  .admin-preview h3 { font-family: var(--font-ui); font-size: 0.9rem; color: var(--text-dim); margin-bottom: 0.5rem; }
+  .admin-preview .markdown-body { font-size: 0.9rem; }
+  .hljs { background: transparent !important; }
+  @media (max-width: 600px) { .form-row { grid-template-columns: 1fr; } }
+</style>
+
+<div class="admin-wrap" id="adminApp">
+  <h1>Admin Panel</h1>
+  <p>Manage posts directly from the browser. Changes push to GitHub instantly.</p>
+
+  <div id="adminMsg" class="admin-msg" style="display:none"></div>
+
+  <!-- Login -->
+  <div id="loginSection" class="admin-login">
+    <h2>GitHub Login</h2>
+    <div class="admin-form">
+      <div class="form-row">
+        <div>
+          <label for="ghToken">Token (repo contents: write)</label>
+          <input type="password" id="ghToken" placeholder="github_pat_..." autocomplete="off">
+        </div>
+        <div>
+          <label for="ghOwner">Owner</label>
+          <input type="text" id="ghOwner" value="hazouka">
+        </div>
+        <div>
+          <label for="ghBranch">Branch</label>
+          <input type="text" id="ghBranch" value="main">
+        </div>
+      </div>
+      <div class="admin-actions">
+        <button class="primary" id="loginBtn">Login</button>
+        <button id="clearLoginBtn">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Editor (hidden until logged in) -->
+  <div id="editorSection" style="display:none">
+    <div class="admin-form">
+      <div class="form-row">
+        <div>
+          <label for="postTitle">Title</label>
+          <input type="text" id="postTitle" placeholder="Post title">
+          <div class="slug-preview" id="slugPreview">/slug-will-be-here/</div>
+        </div>
+        <div>
+          <label for="postDate">Date</label>
+          <input type="date" id="postDate">
+        </div>
+        <div>
+          <label for="postTags">Tags (comma separated)</label>
+          <input type="text" id="postTags" placeholder="reverse, cpp, windows">
+        </div>
+      </div>
+      <div>
+        <label for="postContent">Content (markdown)</label>
+        <textarea id="postContent" placeholder="Write your post in markdown..."></textarea>
+      </div>
+    </div>
+    <div class="admin-actions">
+      <button class="primary" id="saveBtn">Save Post</button>
+      <button id="previewToggleBtn">Toggle Preview</button>
+      <button class="danger" id="deleteBtn" style="display:none">Delete Post</button>
+      <span style="font-size:0.8rem;color:var(--text-dim);margin-left:auto" id="postStatus"></span>
+    </div>
+    <div id="previewSection" class="admin-preview" style="display:none">
+      <h3>Preview</h3>
+      <div class="markdown-body" id="previewContent"></div>
+    </div>
+    <hr style="border-color:var(--border);margin:2rem 0">
+
+    <!-- Existing posts -->
+    <div class="admin-posts">
+      <h2>Existing Posts</h2>
+      <div id="postsList"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/15.0.7/marked.min.js"></script>
+<script>
+(function() {
+  const STORAGE_KEY = 'reblog-admin-v2';
+  const DRAFT_KEY = 'reblog-draft-v2';
+  let currentFile = null;
+  let postsCache = [];
+
+  const $ = id => document.getElementById(id);
+  const msg = $('adminMsg');
+
+  function showMsg(text, type) {
+    msg.textContent = text;
+    msg.className = 'admin-msg ' + type;
+    msg.style.display = 'block';
+    setTimeout(() => { msg.style.display = 'none'; }, 4000);
+  }
+
+  function loadSettings() {
+    try {
+      const s = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      $('ghToken').value = s.token || '';
+      $('ghOwner').value = s.owner || 'hazouka';
+      $('ghBranch').value = s.branch || 'main';
+    } catch(e) {}
+  }
+
+  function saveSettings() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      token: $('ghToken').value.trim(),
+      owner: $('ghOwner').value.trim() || 'hazouka',
+      branch: $('ghBranch').value.trim() || 'main'
+    }));
+  }
+
+  function clearSettings() {
+    localStorage.removeItem(STORAGE_KEY);
+    loadSettings();
+  }
+
+  function loadDraft() {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}');
+      if (d.title) $('postTitle').value = d.title;
+      if (d.date) $('postDate').value = d.date;
+      if (d.tags) $('postTags').value = d.tags;
+      if (d.content) $('postContent').value = d.content;
+      if (d.file) currentFile = d.file;
+    } catch(e) {}
+  }
+
+  function saveDraft() {
+    localStorage.setItem(DRAFT_KEY, JSON.stringify({
+      title: $('postTitle').value,
+      date: $('postDate').value,
+      tags: $('postTags').value,
+      content: $('postContent').value,
+      file: currentFile
+    }));
+  }
+
+  function slugify(text) {
+    return text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || 'untitled';
+  }
+
+  function updateSlug() {
+    const title = $('postTitle').value;
+    $('slugPreview').textContent = '/' + slugify(title) + '/';
+  }
+
+  function getConfig() {
+    return {
+      token: $('ghToken').value.trim(),
+      owner: $('ghOwner').value.trim() || 'hazouka',
+      branch: $('ghBranch').value.trim() || 'main'
+    };
+  }
+
+  let repo = 'hazouka.github.io';
+
+  async function ghFetch(path, options = {}) {
+    const cfg = getConfig();
+    const url = `https://api.github.com/repos/${cfg.owner}/${repo}${path}`;
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${cfg.token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        ...options.headers
+      }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+    return data;
+  }
+
+  async function getFile(path) {
+    try {
+      return await ghFetch('/contents/' + encodeURIComponent(path));
+    } catch(e) {
+      return null;
+    }
+  }
+
+  async function saveFile(path, content, message) {
+    const existing = await getFile(path);
+    const body = {
+      message: message || 'Update post via admin',
+      content: btoa(unescape(encodeURIComponent(content))),
+      branch: getConfig().branch
+    };
+    if (existing && existing.sha) body.sha = existing.sha;
+    return await ghFetch('/contents/' + encodeURIComponent(path), {
+      method: 'PUT',
+      body: JSON.stringify(body)
+    });
+  }
+
+  async function deleteFile(path, message) {
+    const existing = await getFile(path);
+    if (!existing) return;
+    await ghFetch('/contents/' + encodeURIComponent(path), {
+      method: 'DELETE',
+      body: JSON.stringify({
+        message: message || 'Delete post via admin',
+        sha: existing.sha,
+        branch: getConfig().branch
+      })
+    });
+  }
+
+  function buildPostFilename(title, date) {
+    const slug = slugify(title);
+    const d = date ? new Date(date + 'T12:00:00') : new Date();
+    const ds = d.toISOString().split('T')[0];
+    return `_posts/${ds}-${slug}.md`;
+  }
+
+  function buildPostContent(title, date, tags, content) {
+    let fm = '---\n';
+    fm += `title: "${title}"\n`;
+    fm += `date: ${date ? date + ' 12:00:00 +0000' : new Date().toISOString().split('T')[0] + ' 12:00:00 +0000'}\n`;
+    if (tags) {
+      const tagArr = tags.split(',').map(t => t.trim()).filter(Boolean);
+      if (tagArr.length) fm += `tags: [${tagArr.join(', ')}]\n`;
+    }
+    fm += '---\n\n';
+    fm += content;
+    return fm;
+  }
+
+  async function loadPosts() {
+    try {
+      const data = await ghFetch('/git/trees/main?recursive=1');
+      const posts = data.tree.filter(f => f.path.startsWith('_posts/') && f.path.endsWith('.md'));
+      postsCache = posts;
+      const list = $('postsList');
+      if (!posts.length) {
+        list.innerHTML = '<p style="color:var(--text-dim);font-size:0.9rem">No posts yet.</p>';
+        return;
+      }
+      list.innerHTML = posts.map(p => {
+        const name = p.path.replace('_posts/', '');
+        const match = name.match(/^\d{4}-\d{2}-\d{2}-(.+)\.md$/);
+        const title = match ? match[1].replace(/-/g, ' ') : name;
+        return `<div class="admin-post-item">
+          <div><span class="title">${title}</span><span class="date">${p.path}</span></div>
+          <div class="actions">
+            <button onclick="editPost('${p.path}')">Edit</button>
+            <button class="danger" onclick="deletePost('${p.path}')">Del</button>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      showMsg('Failed to load posts: ' + e.message, 'err');
+    }
+  }
+
+  async function editPost(path) {
+    try {
+      const data = await ghFetch('/contents/' + encodeURIComponent(path));
+      const content = decodeURIComponent(escape(atob(data.content)));
+      // Parse front matter
+      const fmMatch = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+      if (fmMatch) {
+        const fm = fmMatch[1];
+        const body = fmMatch[2].trim();
+        const title = (fm.match(/title:\s*"?([^"\n]+)"?/) || [,''])[1];
+        const date = (fm.match(/date:\s*(\S+)/) || [,''])[1];
+        const tags = (fm.match(/tags:\s*\[([^\]]*)\]/) || [,''])[1];
+        $('postTitle').value = title.trim();
+        if (date) $('postDate').value = date.split(' ')[0];
+        $('postTags').value = tags;
+        $('postContent').value = body;
+        currentFile = path;
+        $('deleteBtn').style.display = 'inline-block';
+        $('postStatus').textContent = 'Editing: ' + path;
+        updateSlug();
+        saveDraft();
+      }
+    } catch(e) {
+      showMsg('Failed to load post: ' + e.message, 'err');
+    }
+  }
+
+  async function deletePost(path) {
+    if (!confirm('Delete ' + path + '?')) return;
+    try {
+      await deleteFile(path, 'Delete ' + path);
+      showMsg('Deleted!', 'ok');
+      loadPosts();
+      if (currentFile === path) {
+        $('postTitle').value = '';
+        $('postDate').value = '';
+        $('postTags').value = '';
+        $('postContent').value = '';
+        currentFile = null;
+        $('deleteBtn').style.display = 'none';
+        $('postStatus').textContent = '';
+        localStorage.removeItem(DRAFT_KEY);
+      }
+    } catch(e) {
+      showMsg('Delete failed: ' + e.message, 'err');
+    }
+  }
+
+  $('postTitle').addEventListener('input', () => { updateSlug(); saveDraft(); });
+  $('postDate').addEventListener('change', saveDraft);
+  $('postTags').addEventListener('input', saveDraft);
+  $('postContent').addEventListener('input', saveDraft);
+
+  updateSlug();
+
+  $('loginBtn').addEventListener('click', async () => {
+    const cfg = getConfig();
+    if (!cfg.token || !cfg.owner) {
+      showMsg('Token and owner required', 'err');
+      return;
+    }
+    try {
+      const data = await ghFetch('');
+      repo = data.name || 'hazouka.github.io';
+      saveSettings();
+      $('loginSection').style.display = 'none';
+      $('editorSection').style.display = 'block';
+      showMsg('Logged in as ' + cfg.owner + '/' + repo, 'ok');
+      loadPosts();
+      loadDraft();
+    } catch(e) {
+      showMsg('Login failed: ' + e.message, 'err');
+    }
+  });
+
+  $('clearLoginBtn').addEventListener('click', () => {
+    clearSettings();
+    showMsg('Credentials cleared', 'ok');
+  });
+
+  $('saveBtn').addEventListener('click', async () => {
+    const title = $('postTitle').value.trim();
+    const date = $('postDate').value;
+    const tags = $('postTags').value.trim();
+    const content = $('postContent').value.trim();
+
+    if (!title || !content) {
+      showMsg('Title and content required', 'err');
+      return;
+    }
+
+    const filename = currentFile || buildPostFilename(title, date);
+    const fullContent = buildPostContent(title, date, tags, content);
+    const msg_text = currentFile ? 'Update ' + currentFile : 'New post: ' + title;
+
+    try {
+      await saveFile(filename, fullContent, msg_text);
+      showMsg('Saved! (' + filename + ')', 'ok');
+      currentFile = filename;
+      $('deleteBtn').style.display = 'inline-block';
+      $('postStatus').textContent = 'Saved: ' + filename;
+      localStorage.removeItem(DRAFT_KEY);
+      loadPosts();
+    } catch(e) {
+      showMsg('Save failed: ' + e.message, 'err');
+    }
+  });
+
+  $('deleteBtn').addEventListener('click', () => {
+    if (currentFile) deletePost(currentFile);
+  });
+
+  $('previewToggleBtn').addEventListener('click', () => {
+    const preview = $('previewSection');
+    if (preview.style.display !== 'none') {
+      preview.style.display = 'none';
+      return;
+    }
+    const content = $('postContent').value;
+    if (!content) { showMsg('Nothing to preview', 'err'); return; }
+    try {
+      $('previewContent').innerHTML = marked.parse(content);
+      preview.style.display = 'block';
+      // highlight code in preview
+      $('previewContent').querySelectorAll('pre code').forEach(block => {
+        hljs.highlightElement(block);
+      });
+    } catch(e) {
+      showMsg('Preview error', 'err');
+    }
+  });
+
+  // Check if already logged in
+  loadSettings();
+  const cfg = getConfig();
+  if (cfg.token && cfg.owner) {
+    // Try auto-login
+    (async () => {
+      try {
+        const data = await ghFetch('');
+        repo = data.name || 'hazouka.github.io';
+        $('loginSection').style.display = 'none';
+        $('editorSection').style.display = 'block';
+        loadPosts();
+        loadDraft();
+      } catch(e) {
+        // Auto-login failed, show login form
+      }
+    })();
+  }
+})();
+</script>
