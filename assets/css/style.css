@@ -949,6 +949,15 @@ kbd {
   color: #c4cce0;
 }
 
+.markdown-body img {
+  display: block;
+  margin: 1.4rem auto 1.8rem;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
 .md-image-wrap {
   margin: 1.4rem 0 1.8rem;
   text-align: center;
