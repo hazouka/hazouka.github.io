@@ -263,19 +263,29 @@ title: Admin
     return data;
   }
 
-  async function getFile(path) { try { return await ghFetch('/contents/' + encodeURIComponent(path)); } catch(e) { return null; } }
-
-  async function saveFile(path, content, message, retried) {
-    var existing = await getFile(path);
-    var body = { message: message || 'Update post via admin', content: btoa(unescape(encodeURIComponent(content))), branch: getConfig().branch };
-    if (existing && existing.sha) body.sha = existing.sha;
+  async function getFile(path) {
     try {
-      return await ghFetch('/contents/' + encodeURIComponent(path), { method: 'PUT', body: JSON.stringify(body) });
+      return await ghFetch('/contents/' + encodeURIComponent(path));
     } catch(e) {
-      if (!retried && e.message && e.message.indexOf('does not match') > -1) {
-        return await saveFile(path, content, message, true);
-      }
+      if (e.message && e.message.indexOf('Not Found') > -1) return null;
       throw e;
+    }
+  }
+
+  async function saveFile(path, content, message) {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      try {
+        var existing = await getFile(path);
+        var body = { message: message || 'Update post via admin', content: btoa(unescape(encodeURIComponent(content))), branch: getConfig().branch };
+        if (existing && existing.sha) body.sha = existing.sha;
+        return await ghFetch('/contents/' + encodeURIComponent(path), { method: 'PUT', body: JSON.stringify(body) });
+      } catch(e) {
+        if (attempt < 2 && e.message && e.message.indexOf('does not match') > -1) {
+          await new Promise(r => setTimeout(r, 500));
+          continue;
+        }
+        throw e;
+      }
     }
   }
 
