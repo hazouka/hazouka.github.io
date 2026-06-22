@@ -1544,3 +1544,5 @@ body {
 .post-nav { display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--border); gap: 1rem; }
 .post-nav a { max-width: 45%; }
 
+.post-card-title a { color: inherit; }.post-card-title a:hover { color: var(--link); text-decoration: none; }
+
