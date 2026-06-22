@@ -4,8 +4,8 @@ title: RE-blog
 name: hazouka
 description: Reverse Engineering notes and writeups
 url: "https://hazouka.github.io"
-baseurl: "/RE-blog"
-repository: "hazouka/RE-blog"
+baseurl: ""
+repository: "hazouka/hazouka.github.io"
 teaser: /assets/images/bio-photo.jpg
 logo: /assets/images/bio-photo.jpg
 words_per_minute: 200
