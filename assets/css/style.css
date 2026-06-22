@@ -453,7 +453,16 @@ textarea {
   transition: all var(--transition);
 }
 
+.post-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
 
+.post-card:hover .post-card-title {
+  color: var(--text-head);
+}
+.post-card:hover .post-read-link {
+  color: var(--accent);
+}
 
 .post-card-meta {
   display: flex;
@@ -1308,8 +1317,7 @@ kbd {
 }
 
 body {
-  background: radial-gradient(circle at 10% 10%, rgba(189, 147, 249, 0.12) 0%, transparent 40%), radial-gradient(circle at 90% 90%, rgba(139, 233, 253, 0.1) 0%, transparent 40%), var(--bg);
-  background-attachment: fixed;
+  background: var(--bg);
 }
 
 .tag-bar {
@@ -1500,5 +1508,5 @@ body {
 .post-nav a { max-width: 45%; }
 
 .post-card-title a { color: var(--text-head); }
-.post-card-title a:hover { color: var(--text-head); text-decoration: none; }
+.post-card-title a:hover { color: var(--link); text-decoration: none; }
 
