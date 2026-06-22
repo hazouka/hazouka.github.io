@@ -1,7 +1,6 @@
 ---
 title: "Reverse Engineering Integrity Checks"
-date: 2026-06-13
-layout: post
+date: 2026-06-13 12:00:00 +0000
 ---
 
 # -Introduction
@@ -26,7 +25,7 @@ fortunately this program doesn't have any encryption inside of it which makes it
 
 # -Static Analysis
 
-```
+```cpp
 failed_to_load:
   is_initialized = v55 == 0;
   QString::~QString(&v191);
@@ -48,7 +47,7 @@ failed_to_load:
 ```
 we can see that we are checking the boolean is_initialized which determines whether the file was parsed or loaded successfully.
 so the first thing we'd want to do is to find where the file is opened and luckily its very easy to indentify it
-```
+```cpp
   v31 = (QString *)QCoreApplication::applicationFilePath(v238);
   file_path = j_get_file_path_by_extension((QString *)&v191, v31, ".mfh");
   QFile::QFile((QFile *)mfh_Qt_file, file_path);
@@ -71,7 +70,7 @@ failed_to_open_file:
 aha there we go so if the file doesn't exist or if it misses the correct signature it will tell us that it failed to load it, okay so that means we can just put make a file with that signature? no that doesn't work because that was just the initial check
 going down a little we find a lot of interesting code,since the code is too big we will divide into chunks to analyze one by one
 
-```
+```cpp
 index = *((int *)QByteArray::data(&mfh_file_buffer) + 3);
   v162 = QString::fromAscii_helper((const char *)&qword_180291600, 2);
   LOBYTE(v35) = 32;
@@ -452,4 +451,3 @@ https://github.com/hazouka/MiniTool-Partition-Wizard-Integrity-Check
 I hope that this was helpful,the main purpose of this post was to understand integrity checks in general ,your more than welcome to put suggetions on how can i improve at writing because i feel like im not being as much as detailed but i tried.
 
 > I was writing at the night, now its the morning..
-
