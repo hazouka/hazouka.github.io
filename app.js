@@ -45,7 +45,7 @@
                     _resolve: null,
                 },
 
-                emptyPreviewContent: `# Preview\n\nStart writing on the left.\n\n[[image:uploads/example.png|alt=|width=70]]\n\n\`\`\`c\nHANDLE hProc = OpenProcess(\n    PROCESS_ALL_ACCESS, FALSE, pid);\n\`\`\`\n\n\`\`\`asm\nmov  rax, [rbp - 0x18]\nxor  eax, eax\nret\n\`\`\`\n\nInline: \`NTSTATUS\`, \`0xDEADBEEF\`\n`,
+                emptyPreviewContent: `# Preview\n\nStart writing on the left.\n\n[[image:posts/example-post/images/example_post_image.png|alt=|width=70]]\n\n\`\`\`c\nHANDLE hProc = OpenProcess(\n    PROCESS_ALL_ACCESS, FALSE, pid);\n\`\`\`\n\n\`\`\`asm\nmov  rax, [rbp - 0x18]\nxor  eax, eax\nret\n\`\`\`\n\nInline: \`NTSTATUS\`, \`0xDEADBEEF\`\n`,
 
                 get allTags() {
                     const tagSet = new Set();
@@ -1081,7 +1081,42 @@
                     }
                 },
 
-                async deletePostFromServer(id) {
+                async deleteFileFromGithub(filePath) {
+                    if (!this.isAdmin) return;
+                    const encodedPath = this.githubApiPath(filePath);
+                    const getRes = await this.githubRequest(
+                        "/repos/" +
+                        encodeURIComponent(this.githubOwner) +
+                        "/" +
+                        encodeURIComponent(this.githubRepo) +
+                        "/contents/" +
+                        encodedPath +
+                        "?ref=" +
+                        encodeURIComponent(this.githubBranch),
+                    );
+                    if (!getRes.ok) return;
+                    const fileData = await getRes.json();
+                    if (!fileData || !fileData.sha) return;
+                    await this.githubRequest(
+                        "/repos/" +
+                        encodeURIComponent(this.githubOwner) +
+                        "/" +
+                        encodeURIComponent(this.githubRepo) +
+                        "/contents/" +
+                        encodedPath,
+                        {
+                            method: "DELETE",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                message: "Delete image " + filePath.split("/").pop(),
+                                sha: fileData.sha,
+                                branch: this.githubBranch,
+                            }),
+                        },
+                    );
+                },
+
+                async deletePostFromServer(id, post = null) {
                     try {
                         if (!this.isAdmin) {
                             this.syncErrorMessage =
@@ -1099,9 +1134,23 @@
                             "Delete post " + id,
                         );
 
-                        this.deletePostFolderFromGithub("posts/" + id + "/images").catch(
-                            () => { },
-                        );
+                        // Delete all images referenced in the post content
+                        if (post && post.content) {
+                            const refs = [...post.content.matchAll(/\[\[image:(.+?)\|alt=/g)];
+                            const paths = refs.map((m) => m[1]).filter((p) => !p.startsWith("asset:"));
+                            for (const path of paths) {
+                                await this.deleteFileFromGithub(path).catch(() => { });
+                            }
+                        }
+
+                        // Delete post's image directories (both old ID-based and new slug-based)
+                        this.deletePostFolderFromGithub("posts/" + id + "/images").catch(() => { });
+                        if (post) {
+                            const slug = this.slugify(post.title);
+                            if (slug) {
+                                this.deletePostFolderFromGithub("posts/" + slug + "/images").catch(() => { });
+                            }
+                        }
 
                         return jsonOk;
                     } catch (e) {
@@ -1149,7 +1198,7 @@
                     }
                 },
 
-                async uploadImageToServer(file, postId) {
+                async uploadImageToServer(file, slug) {
                     if (!this.isAdmin) throw new Error("Admin session missing");
                     const dataUrl = await this.readFileAsDataUrl(file);
                     const parts = String(dataUrl || "").split(",", 2);
@@ -1158,9 +1207,9 @@
 
                     const originalName = file.name || "image.png";
                     const safeName = originalName.replace(/[^A-Za-z0-9._-]/g, "_");
-                    const pid = postId || this.editor.id || "tmp_" + Date.now();
+                    const s = slug || this.slugify(this.editor.title) || "post-" + Date.now();
                     const storedPath =
-                        "posts/" + pid + "/images/" + Date.now() + "_" + safeName;
+                        "posts/" + s + "/images/" + s + "_" + safeName;
                     const ok = await this.pushBase64FileToGithub(
                         storedPath,
                         base64Content,
@@ -1744,6 +1793,7 @@
                                 `Preparing ${pendingEntries.length} image(s)...`,
                                 "ok",
                             );
+                        const slug = this.slugify(this.editor.title) || "post-" + this.editor.id;
                         for (const [assetId, file] of pendingEntries) {
                             try {
                                 const dataUrl = await this.readFileAsDataUrl(file);
@@ -1755,9 +1805,9 @@
                                 );
                                 const storedPath =
                                     "posts/" +
-                                    this.editor.id +
+                                    slug +
                                     "/images/" +
-                                    Date.now() +
+                                    slug +
                                     "_" +
                                     safeName;
                                 imageFiles.push({
@@ -1888,14 +1938,15 @@
                     );
                     if (!ok) return;
 
+                    const post = this.posts.find((p) => p.id === id);
                     this.addDeletedId(id);
                     this.posts = this.posts.filter((p) => p.id !== id);
                     this.savePosts();
                     if (this.editor.id === id) this.clearDraft();
-                    const synced = await this.deletePostFromServer(id);
+                    const synced = await this.deletePostFromServer(id, post);
                     if (synced) {
                         this.removeDeletedId(id);
-                        this.showMsg("Deleted from GitHub âœ“", "ok");
+                        this.showMsg("Deleted from GitHub ✓", "ok");
                     } else {
                         this.showMsg("Deleted locally.", "ok");
                     }
