@@ -172,6 +172,7 @@
                     const cached = this.readLocalPosts();
                     this.posts = this.sortPosts(cached);
                     this.restoreDraft();
+                    this.handleRedirect();
                     this.openPostFromUrl();
                     this.cleanupOrphanedAssets();
                     this._previewContent = this.editor.content;
@@ -1594,7 +1595,26 @@
                         ? this.posts.find((p) => String(p.id) === String(postId))
                         : null;
                     const slug = post && post.title ? this.slugify(post.title) : "";
-                    return slug ? "#/" + slug : "#";
+                    const base = window.location.origin + window.location.pathname;
+                    return slug ? base + slug : base;
+                },
+
+                handleRedirect() {
+                    const path = sessionStorage.getItem("redirect");
+                    if (!path) return;
+                    sessionStorage.removeItem("redirect");
+                    const slug = path.replace(/\/+$/, "").split("/").filter(Boolean).pop();
+                    if (slug) {
+                        const post = this.posts.find(
+                            (p) => this.slugify(p.title) === slug,
+                        );
+                        if (post) {
+                            this.reading = { ...post };
+                            this.view = "reading";
+                            this.focusMode = false;
+                            this.updatePostUrl(post.id);
+                        }
+                    }
                 },
 
                 updatePostUrl(postId) {
@@ -1603,9 +1623,15 @@
                 },
 
                 openPostFromUrl() {
-                    const hash = window.location.hash.replace(/^#\/?/, "");
-                    const params = new URLSearchParams(window.location.search);
-                    let postIdOrSlug = params.get("post") || hash;
+                    const url = new URL(window.location.href);
+                    let postIdOrSlug = url.searchParams.get("post");
+                    if (!postIdOrSlug) {
+                        const path = url.pathname.replace(/\/+$/, "");
+                        const parts = path.split("/").filter(Boolean);
+                        if (parts.length > 1) {
+                            postIdOrSlug = parts[parts.length - 1];
+                        }
+                    }
                     if (!postIdOrSlug) return;
 
                     let post = this.posts.find(
