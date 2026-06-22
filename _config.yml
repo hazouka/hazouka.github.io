@@ -9,8 +9,7 @@ permalink: /:title/
 include:
   - _pages
 
-plugins:
-  - jekyll-feed
+plugins: []
 
 defaults:
   - scope:

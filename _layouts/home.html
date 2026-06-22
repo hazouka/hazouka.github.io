@@ -2,22 +2,29 @@
 layout: default
 ---
 
-<h1 class="page-title">{{ page.title | default: site.title }}</h1>
+<div class="home-hero">
+  <span class="hero-tag">// reverse engineering</span>
+  <h1 class="hero-title">{{ page.title | default: site.title }}</h1>
+  {% if page.excerpt %}
+  <p class="hero-desc">{{ page.excerpt }}</p>
+  {% endif %}
+</div>
 
-{% if page.excerpt %}
-<p class="page-desc">{{ page.excerpt }}</p>
-{% endif %}
-
-<div class="posts-list">
+<div class="posts-grid">
 {% for post in site.posts %}
-  <article class="post-preview">
-    <time class="post-date" datetime="{{ post.date | date_to_xmlschema }}">{{ post.date | date: "%b %d, %Y" }}</time>
-    <h2 class="post-title">
+  <article class="post-card">
+    <div class="post-card-meta">
+      <span>{{ post.date | date: "%b %d, %Y" }}</span>
+    </div>
+    <h2 class="post-card-title">
       <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
     </h2>
     {% if post.excerpt %}
-    <p class="post-excerpt">{{ post.excerpt | strip_html | truncate: 200 }}</p>
+    <p class="post-card-excerpt">{{ post.excerpt | strip_html | truncate: 200 }}</p>
     {% endif %}
+    <div class="post-card-footer">
+      <a href="{{ post.url | relative_url }}" class="post-read-link">Read &rarr;</a>
+    </div>
   </article>
 {% endfor %}
 </div>

@@ -6,22 +6,26 @@
   <title>{% if page.title %}{{ page.title }} - {{ site.title }}{% else %}{{ site.title }}{% endif %}</title>
   <meta name="description" content="{% if page.excerpt %}{{ page.excerpt | strip_html | strip_newlines | truncate: 160 }}{% else %}{{ site.description }}{% endif %}">
   <link rel="stylesheet" href="{{ '/assets/css/style.css' | relative_url }}">
-  <link rel="alternate" type="application/atom+xml" title="{{ site.title }}" href="{{ '/feed.xml' | relative_url }}">
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <header class="site-header">
-  <div class="wrap">
-    <a href="{{ '/' | relative_url }}" class="logo">RE-blog</a>
-    <nav>
-      <a href="{{ '/' | relative_url }}">Posts</a>
-      <a href="{{ '/about' | relative_url }}">About</a>
+  <div class="header-left">
+    <a href="{{ '/' | relative_url }}" class="site-logo">
+      <span class="logo-caret">&rsaquo;</span>re-blog
+    </a>
+  </div>
+  <div class="header-right">
+    <nav class="hdr-actions">
+      <a href="{{ '/' | relative_url }}" class="btn btn-ghost">Posts</a>
+      <a href="{{ '/about' | relative_url }}" class="btn btn-ghost">About</a>
     </nav>
   </div>
 </header>
 
-<main class="main-content">
-  <div class="wrap">
+<main class="view">
+  <div class="home-wrap">
     {{ content }}
   </div>
 </main>
