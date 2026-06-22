@@ -1,57 +1,25 @@
-remote_theme: "mmistakes/minimal-mistakes"
-minimal_mistakes_skin: "dark"
 title: RE-blog
 name: hazouka
 description: Reverse Engineering notes and writeups
 url: "https://hazouka.github.io"
 baseurl: ""
-repository: "hazouka/hazouka.github.io"
-teaser: /assets/images/bio-photo.jpg
-logo: /assets/images/bio-photo.jpg
-words_per_minute: 200
+
+permalink: /:title/
+
+include:
+  - _pages
 
 plugins:
-  - jekyll-paginate
-  - jekyll-sitemap
-  - jekyll-gist
   - jekyll-feed
-  - jekyll-include-cache
-  - jekyll-remote-theme
-
-paginate: 5
-paginate_path: /page:num/
 
 defaults:
   - scope:
       path: ""
       type: posts
     values:
-      layout: single
-      author_profile: true
-      read_time: true
-      comments: false
-      share: true
-      related: true
-
-include:
-  - _pages
-
-author:
-  name: hazouka
-  avatar: /assets/images/bio-photo.jpg
-  bio: Reverse Engineering enthusiast
-  links:
-    - label: GitHub
-      icon: fab fa-github
-      url: https://github.com/hazouka
-
-footer:
-  links:
-    - label: GitHub
-      icon: fab fa-github
-      url: https://github.com/hazouka
-
-atom_feed:
-  hide: false
-
-search: true
+      layout: post
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: page

@@ -1,8 +1,7 @@
 ---
 title: "Crackmes.one CTF (FLRSCRNSVR.SCR)"
 date: 2026-04-18
-layout: single
-classes: wide
+layout: post
 ---
 
 # Intro

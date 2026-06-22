@@ -1,8 +1,7 @@
 ---
 title: "Reverse Engineering Integrity Checks"
 date: 2026-06-13
-layout: single
-classes: wide
+layout: post
 ---
 
 # -Introduction

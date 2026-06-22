@@ -1,7 +1,7 @@
 ---
 title: "About"
 permalink: /about/
-layout: single
+layout: page
 ---
 
 Reverse Engineering blog by hazouka. Writeups, notes, and analysis of crackmes, CTFs, and software internals.
