@@ -1596,7 +1596,7 @@
                         : null;
                     const slug = post && post.title ? this.slugify(post.title) : "";
                     const base = window.location.origin + window.location.pathname;
-                    return slug ? base + slug : base;
+                    return post ? base + "?post=" + post.id : base;
                 },
 
                 handleRedirect() {
