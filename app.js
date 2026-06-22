@@ -1590,20 +1590,12 @@
                 },
 
                 buildPostUrl(postId) {
-                    const url = new URL(window.location.href);
-                    if (postId) {
-                        const post = this.posts.find(
-                            (p) => String(p.id) === String(postId),
-                        );
-                        if (post && post.title) {
-                            url.searchParams.set("post", this.slugify(post.title));
-                        } else {
-                            url.searchParams.set("post", String(postId));
-                        }
-                    } else {
-                        url.searchParams.delete("post");
-                    }
-                    return url.toString();
+                    const post = postId
+                        ? this.posts.find((p) => String(p.id) === String(postId))
+                        : null;
+                    const slug = post && post.title ? this.slugify(post.title) : "";
+                    const base = window.location.origin + window.location.pathname;
+                    return slug ? base + slug : base;
                 },
 
                 updatePostUrl(postId) {
@@ -1613,7 +1605,14 @@
 
                 openPostFromUrl() {
                     const url = new URL(window.location.href);
-                    const postIdOrSlug = url.searchParams.get("post");
+                    let postIdOrSlug = url.searchParams.get("post");
+                    if (!postIdOrSlug) {
+                        const path = url.pathname.replace(/\/+$/, "");
+                        const parts = path.split("/").filter(Boolean);
+                        if (parts.length > 1) {
+                            postIdOrSlug = parts[parts.length - 1];
+                        }
+                    }
                     if (!postIdOrSlug) return;
 
                     let post = this.posts.find(
