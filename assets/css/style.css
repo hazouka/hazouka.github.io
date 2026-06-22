@@ -1,27 +1,28 @@
 ﻿@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap");
 
 :root {
-  --bg: #1a1b26;
-  --bg-alt: #16171f;
-  --bg-panel: #1e1f2e;
-  --bg-card: #1c1d2b;
-  --bg-hover: #222436;
-  --border: #2a2b3d;
-  --border-hi: #3d3f5c;
+  --bg: #282a36;
+  --bg-alt: #21222c;
+  --bg-panel: #2c2d3a;
+  --bg-card: #2c2d3a;
+  --bg-hover: #313244;
+  --border: #44475a;
+  --border-hi: #555875;
 
-  --text: #c0caf5;
-  --text-dim: #787c99;
-  --text-mute: #414868;
-  --text-head: #e6e9f4;
+  --text: #f8f8f2;
+  --text-dim: #8888a0;
+  --text-mute: #6272a4;
+  --text-head: #ffffff;
 
   --accent: #bd93f9;
   --accent-dim: rgba(189, 147, 249, 0.15);
   --link: #8be9fd;
-  --d-pink: #f38ba8;
-  --d-green: #a6e3a1;
-  --d-yellow: #f9e2af;
+  --d-pink: #ff79c6;
+  --d-green: #50fa7b;
+  --d-yellow: #f1fa8c;
   --d-comment: #6272a4;
-  --d-peach: #fab387;
+  --d-peach: #ffb86c;
+  --d-red: #ff5555;
 
   --font-body: "EB Garamond", Georgia, serif;
   --font-ui: "Outfit", sans-serif;
@@ -30,7 +31,7 @@
   --header-h: 50px;
   --radius: 6px;
   --radius-lg: 12px;
-  --glass-bg: rgba(26, 27, 38, 0.65);
+  --glass-bg: rgba(40, 42, 54, 0.65);
   --glass-border: rgba(255, 255, 255, 0.06);
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
   --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
@@ -51,6 +52,7 @@ html {
 }
 
 body {
+  background: var(--bg);
   transition: background 0.3s;
   font-family: var(--font-body);
   color: var(--text);
@@ -975,7 +977,7 @@ kbd {
 
 /* Code blocks */
 .markdown-body pre {
-  background: #0d1117 !important;
+  background: var(--bg-panel) !important;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   margin: 1.6em 0;
@@ -986,7 +988,7 @@ kbd {
 .markdown-body pre::before {
   content: attr(data-lang);
   display: block;
-  background: #161b22;
+  background: var(--bg-hover);
   border-bottom: 1px solid var(--border);
   padding: 0.38rem 1rem;
   font-family: var(--font-mono);
@@ -998,8 +1000,8 @@ kbd {
 
 .markdown-body pre code {
   display: block;
-  background: transparent !important;
-  color: #cdd6f4;
+  background: transparent;
+  color: var(--text);
   padding: 1rem 1.1rem;
   border: none;
   border-radius: 0;
