@@ -989,11 +989,51 @@ kbd {
   display: block;
   background: transparent;
   color: var(--text);
-  padding: 1.1rem 1.2rem;
+  padding: 0.8rem 1.2rem;
   border: none;
   border-radius: 0;
   font-size: 0.82rem;
   line-height: 1.7;
+}
+
+.code-block-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-hover);
+  border-bottom: 1px solid var(--border);
+  padding: 0.3rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+}
+
+.code-lang {
+  color: var(--d-comment);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.copy-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.copy-btn:hover {
+  background: rgba(255,255,255,0.1);
+  color: var(--text);
+}
+
+.copy-btn.copied {
+  background: rgba(80,250,123,0.1);
+  border-color: rgba(80,250,123,0.2);
+  color: var(--d-green);
 }
 
 /* Inline code */
