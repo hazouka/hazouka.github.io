@@ -9,8 +9,6 @@ permalink: /:title/
 include:
   - _pages
 
-highlighter: none
-
 plugins: []
 
 defaults:

@@ -422,10 +422,6 @@ title: Admin
     try {
       $('previewContent').innerHTML = marked.parse(content);
       preview.style.display = 'block';
-      // highlight code in preview
-      $('previewContent').querySelectorAll('pre code').forEach(block => {
-        hljs.highlightElement(block);
-      });
     } catch(e) {
       showMsg('Preview error', 'err');
     }

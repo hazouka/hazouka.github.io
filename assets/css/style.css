@@ -1510,3 +1510,28 @@ body {
 .post-card-title a { color: var(--text-head); }
 .post-card-title a:hover { color: var(--link); text-decoration: none; }
 
+/* Rouge syntax highlighting — Dracula theme */
+.highlight .c, .highlight .c1, .highlight .cm { color: #6272a4; font-style: italic; }
+.highlight .cp, .highlight .cs { color: #ffb86c; font-style: italic; }
+.highlight .k, .highlight .kc, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kr, .highlight .kt, .highlight .o, .highlight .ow { color: #ff79c6; }
+.highlight .s, .highlight .sa, .highlight .sb, .highlight .sc, .highlight .dl, .highlight .sd, .highlight .s2, .highlight .se, .highlight .sh, .highlight .si, .highlight .sx, .highlight .sr, .highlight .s1, .highlight .ss { color: #f1fa8c; }
+.highlight .m, .highlight .mb, .highlight .mf, .highlight .mh, .highlight .mi, .highlight .il, .highlight .mo { color: #bd93f9; }
+.highlight .p { color: var(--text); }
+.highlight .na, .highlight .nc, .highlight .no, .highlight .nd, .highlight .ne, .highlight .nf, .highlight .fm, .highlight .nx { color: #8be9fd; }
+.highlight .nb, .highlight .bp { color: #8be9fd; }
+.highlight .nl, .highlight .nn { color: #f8f8f2; }
+.highlight .nt { color: #ff79c6; }
+.highlight .nv, .highlight .vc, .highlight .vg, .highlight .vi, .highlight .vm { color: #8be9fd; }
+.highlight .ge { font-style: italic; }
+.highlight .gs { font-weight: bold; }
+.highlight .gh, .highlight .gp { color: #bd93f9; font-weight: bold; }
+.highlight .go { color: #6272a4; }
+.highlight .gr, .highlight .gt { color: #ff5555; }
+.highlight .gu { color: #bd93f9; }
+.highlight .err { color: #ff5555; }
+.highlight .w { color: var(--text-dim); }
+
+/* Override markdown code styles for Rouge-wrapped code blocks */
+.markdown-body .highlight pre, .markdown-body pre.highlight { padding: 0; }
+.markdown-body .highlight pre code, .markdown-body pre.highlight code { padding: 1.1rem 1.2rem; }
+
