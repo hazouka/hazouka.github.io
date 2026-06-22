@@ -4,14 +4,12 @@ date: 2026-06-13 12:00:00 +0000
 ---
 
 # -Introduction
-test
+
 #### Disclaimer
 I did all of this out of curiosity and to test myself on something real for once,i do not plan on giving any clues to reversing the licensing system which is **[very hard]** to bypass? i guess we will never know?
 
 Hello guys,
 Back again with a unique real revers engineering example,and this time its a real world example which is a tool called [MiniTool Partition Wizard](https://www.partitionwizard.com/), its a comprehensive disk and partition management software for Windows.
-
-
 
 
 # -Analysis
