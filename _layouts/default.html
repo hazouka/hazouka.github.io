@@ -42,11 +42,34 @@
 <script>document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.markdown-body pre code:not(:has(span))').forEach(function(b){hljs.highlightElement(b)});
   document.querySelectorAll('.highlight code').forEach(function(el){
-    var h=el.innerHTML;
-    h=h.replace(/<span class="n">(\w+)<\/span><span class="[po]">::<\/span><span class="o">~<\/span><span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1::~$2</span><span class="p">($3)</span>');
-    h=h.replace(/<span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1</span><span class="p">($2)</span>');
-    h=h.replace(/<span class="n">std<\/span><span class="[po]">::<\/span><span class="n">(\w+)<\/span>(?!\s*<span class="[po]">::)/g,'<span class="n">std</span><span class="p">::</span><span class="kt">$1</span>');
-    el.innerHTML=h;
+    // Highlight function calls: identifier directly followed by ()
+    el.querySelectorAll('span.n').forEach(function(sp){
+      var nx=sp.nextElementSibling;
+      if(nx&&nx.classList.contains('p')&&/^\(/.test(nx.textContent))sp.className='nf';
+    });
+    // Highlight destructors: Class :: ~ Class ()
+    el.querySelectorAll('span.o').forEach(function(sp){
+      if(!/^~/.test(sp.textContent))return;
+      var prev=sp.previousElementSibling;
+      if(!prev||!prev.classList.contains('p')||!/::$/.test(prev.textContent))return;
+      var prev2=prev.previousElementSibling;
+      if(!prev2||!prev2.classList.contains('n'))return;
+      var next=sp.nextElementSibling;
+      if(!next||!next.classList.contains('n'))return;
+      var next2=next.nextElementSibling;
+      if(!next2||!next2.classList.contains('p')||!/^\(/.test(next2.textContent))return;
+      prev2.className='nf';next.className='nf';
+    });
+    // std::Type → mark type as .kt
+    el.querySelectorAll('span.n').forEach(function(sp){
+      if(sp.textContent!=='std')return;
+      var nx=sp.nextElementSibling;
+      if(!nx||!/^::$/.test(nx.textContent))return;
+      var nx2=nx.nextElementSibling;
+      if(!nx2||!nx2.classList.contains('n'))return;
+      if(nx2.nextElementSibling&&/^::$/.test(nx2.nextElementSibling.textContent))return;
+      nx2.className='kt';
+    });
   });
 });</script>
 <script>
