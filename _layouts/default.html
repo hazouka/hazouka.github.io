@@ -39,7 +39,15 @@
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-<script>document.addEventListener('DOMContentLoaded',function(){document.querySelectorAll('.markdown-body pre code:not(:has(span))').forEach(function(b){hljs.highlightElement(b)})});</script>
+<script>document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.markdown-body pre code:not(:has(span))').forEach(function(b){hljs.highlightElement(b)});
+  document.querySelectorAll('.highlight code').forEach(function(el){
+    var h=el.innerHTML;
+    h=h.replace(/<span class="n">(\w+)<\/span><span class="p">::<\/span><span class="o">~<\/span><span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1::~$2($3)</span>');
+    h=h.replace(/<span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1($2)</span>');
+    el.innerHTML=h;
+  });
+});</script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.markdown-body pre').forEach(function(pre){
