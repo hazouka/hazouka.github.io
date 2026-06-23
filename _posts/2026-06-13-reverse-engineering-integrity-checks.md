@@ -23,7 +23,7 @@ fortunately this program doesn't have any encryption inside of it which makes it
 
 # -Static Analysis
 
-```cpp
+```c
 failed_to_load:
   is_initialized = v55 == 0;
   QString::~QString(&v191);
