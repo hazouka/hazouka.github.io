@@ -40,37 +40,38 @@
 
 <script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
 <script>document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('.markdown-body pre code:not(:has(span))').forEach(function(b){hljs.highlightElement(b)});
+  try{
+  document.querySelectorAll('.markdown-body pre code').forEach(function(b){
+    if(!b.querySelector('span'))hljs.highlightElement(b);
+  });
   document.querySelectorAll('.highlight code').forEach(function(el){
-    // Highlight function calls: identifier directly followed by ()
     el.querySelectorAll('span.n').forEach(function(sp){
       var nx=sp.nextElementSibling;
-      if(nx&&nx.classList.contains('p')&&/^\(/.test(nx.textContent))sp.className='nf';
+      if(nx&&nx.classList.contains('p')&&nx.textContent.startsWith('('))sp.className='nf';
     });
-    // Highlight destructors: Class :: ~ Class ()
     el.querySelectorAll('span.o').forEach(function(sp){
-      if(!/^~/.test(sp.textContent))return;
-      var prev=sp.previousElementSibling;
-      if(!prev||!prev.classList.contains('p')||!/::$/.test(prev.textContent))return;
-      var prev2=prev.previousElementSibling;
-      if(!prev2||!prev2.classList.contains('n'))return;
-      var next=sp.nextElementSibling;
-      if(!next||!next.classList.contains('n'))return;
-      var next2=next.nextElementSibling;
-      if(!next2||!next2.classList.contains('p')||!/^\(/.test(next2.textContent))return;
-      prev2.className='nf';next.className='nf';
+      if(!sp.textContent.startsWith('~'))return;
+      var p=sp.previousElementSibling;
+      if(!p||!p.classList.contains('p')||!p.textContent.startsWith('::'))return;
+      var p2=p.previousElementSibling;
+      if(!p2||!p2.classList.contains('n'))return;
+      var n=sp.nextElementSibling;
+      if(!n||!n.classList.contains('n'))return;
+      var n2=n.nextElementSibling;
+      if(!n2||!n2.classList.contains('p')||!n2.textContent.startsWith('('))return;
+      p2.className='nf';n.className='nf';
     });
-    // std::Type → mark type as .kt
     el.querySelectorAll('span.n').forEach(function(sp){
       if(sp.textContent!=='std')return;
       var nx=sp.nextElementSibling;
-      if(!nx||!/^::$/.test(nx.textContent))return;
+      if(!nx||!nx.textContent.startsWith('::'))return;
       var nx2=nx.nextElementSibling;
       if(!nx2||!nx2.classList.contains('n'))return;
-      if(nx2.nextElementSibling&&/^::$/.test(nx2.nextElementSibling.textContent))return;
+      if(nx2.nextElementSibling&&nx2.nextElementSibling.textContent.startsWith('::'))return;
       nx2.className='kt';
     });
   });
+  }catch(e){console.error(e)}
 });</script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
