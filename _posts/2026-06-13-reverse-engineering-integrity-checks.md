@@ -103,7 +103,7 @@ after that we proceed to copy 8 bytes from the hashed array to the Key Table cor
 
 After all of this we call ```j_DecompressMfh``` where we pass in the trimmed mfh file with the KeyTable the second parameter is going to be the decompressed file and we will see how its decompressed.
 Following into that function once again i will be splitting it into parts and skipping some that i consider useless
-```
+```cpp
 v38 = Qmfh_arr;
   v37 = out;
   v35 = -2;
@@ -177,7 +177,7 @@ we access the next byte which is also a hard coded 3 and that value might be dif
   }
 ```
 and that's all it does after we finish Deciphering the data we remove another byte from the array
-``` 
+``` cpp
 mfh_arr_3.QByteArr = QByteArray::mid(&mfh_arr_2, (unsigned int)&mfh_arr_data_1, 1).QByteArr;
     QByteArray::operator=(&mfh_arr_2, mfh_arr_3.QByteArr);
     QByteArray::~QByteArray((QByteArray *)&mfh_arr_data_1);
@@ -235,7 +235,7 @@ else
     }
 ```
 after going through one of those we decompress the actual file
-```
+```cpp
 if ( !v23 )
       goto unequal_sum;
 LABEL_23:
@@ -301,7 +301,7 @@ and we can already notice that the decrypted file contains the list of files tha
 
 after we insert the 16 bytes signature this comes after
 
-```
+```cpp
 if ( !decompressed_mfh.QByteArr->size )
     goto invalid_array_size;
   QByteArray::insert(&decompressed_mfh, 0, (const char *)&qword_180A43430, 16);
@@ -416,7 +416,7 @@ so the entry header contains the number of entries or the amount of files and we
 notice how we also add 459 (455 + 4) to the Entry that means that each Entry is 459 bytes in size and more clues is that we add 259 which is an offset to the list of data.
 then we loop 10 times and grab 20 bytes through this information we know that our data array has to be a multiple of 20 exactly which if you notice our structure guess thats correct those hashes are then pushed to a qlist and finnaly after of all that we will push the file name and file hash array to a qlist our guess Entry structure is
 
-```
+```cpp
 struct Entry {
   uint32_t file_size;
   char FileName[255];
