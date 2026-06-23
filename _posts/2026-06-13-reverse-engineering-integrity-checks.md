@@ -449,5 +449,3 @@ https://github.com/hazouka/MiniTool-Partition-Wizard-Integrity-Check
 I hope that this was helpful,the main purpose of this post was to understand integrity checks in general ,your more than welcome to put suggetions on how can i improve at writing because i feel like im not being as much as detailed but i tried.
 
 > I was writing at the night, now its the morning..
-
-test
