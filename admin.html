@@ -338,6 +338,7 @@ title: Admin
   function updatePreview() {
     var content = $('postContent').value;
     $('previewContent').innerHTML = content ? marked.parse(content) : '';
+    $('previewContent').querySelectorAll('pre code').forEach(function(b){if(!b.querySelector('span'))hljs.highlightElement(b)});
     $('wordCount').textContent = countWords(content) + ' words';
   }
 
