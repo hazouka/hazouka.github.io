@@ -1015,6 +1015,10 @@ kbd {
 .code-lang { display: none; }
 
 .copy-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 5;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.06);
   border-radius: 4px;
