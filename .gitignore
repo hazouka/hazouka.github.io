@@ -11,3 +11,6 @@ _site/
 .jekyll-cache/
 .sass-cache/
 Gemfile.lock
+
+node_modules/
+serve.js

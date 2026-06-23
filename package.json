@@ -1,0 +1,7 @@
+{
+  "devDependencies": {
+    "express": "^5.2.1",
+    "front-matter": "^4.0.2",
+    "marked": "^18.0.5"
+  }
+}
