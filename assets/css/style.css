@@ -1569,6 +1569,7 @@ body {
 .markdown-body .highlight .m, .markdown-body .highlight .mb, .markdown-body .highlight .mf, .markdown-body .highlight .mh, .markdown-body .highlight .mi, .markdown-body .highlight .il, .markdown-body .highlight .mo { color: #bd93f9; }
 .markdown-body .highlight .nf, .markdown-body .highlight .fm { color: #50fa7b; }
 .markdown-body .highlight .na, .markdown-body .highlight .nc, .markdown-body .highlight .no, .markdown-body .highlight .nd, .markdown-body .highlight .ne, .markdown-body .highlight .nx, .markdown-body .highlight .nv, .markdown-body .highlight .vc, .markdown-body .highlight .vg, .markdown-body .highlight .vi, .markdown-body .highlight .vm { color: #8be9fd; }
+.markdown-body .highlight .n { color: var(--text); }
 .markdown-body .highlight .nb, .markdown-body .highlight .bp { color: #8be9fd; }
 .markdown-body .highlight .nl, .markdown-body .highlight .nn { color: #f8f8f2; }
 .markdown-body .highlight .p { color: var(--text); }

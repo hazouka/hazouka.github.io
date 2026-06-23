@@ -43,8 +43,9 @@
   document.querySelectorAll('.markdown-body pre code:not(:has(span))').forEach(function(b){hljs.highlightElement(b)});
   document.querySelectorAll('.highlight code').forEach(function(el){
     var h=el.innerHTML;
-    h=h.replace(/<span class="n">(\w+)<\/span><span class="p">::<\/span><span class="o">~<\/span><span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1::~$2($3)</span>');
-    h=h.replace(/<span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1($2)</span>');
+    h=h.replace(/<span class="n">(\w+)<\/span><span class="[po]">::<\/span><span class="o">~<\/span><span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1::~$2</span><span class="p">($3)</span>');
+    h=h.replace(/<span class="n">(\w+)<\/span><span class="p">\(([^)]*)\)<\/span>/g,'<span class="nf">$1</span><span class="p">($2)</span>');
+    h=h.replace(/<span class="n">std<\/span><span class="[po]">::<\/span><span class="n">(\w+)<\/span>(?!\s*<span class="[po]">::)/g,'<span class="n">std</span><span class="p">::</span><span class="kt">$1</span>');
     el.innerHTML=h;
   });
 });</script>
