@@ -1006,43 +1006,38 @@ kbd {
 }
 
 .code-block-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-hover);
-  border-bottom: 1px solid var(--border);
-  padding: 0.3rem 0.8rem;
-  font-family: var(--font-mono);
-  font-size: 0.65rem;
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  z-index: 1;
 }
 
-.code-lang {
-  color: var(--d-comment);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
+.code-lang { display: none; }
 
 .copy-btn {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 4px;
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem 0.45rem;
   font-family: var(--font-ui);
   font-size: 0.62rem;
   color: var(--text-dim);
   cursor: pointer;
   transition: all var(--transition);
+  opacity: 0.5;
 }
 
 .copy-btn:hover {
   background: rgba(255,255,255,0.1);
   color: var(--text);
+  opacity: 1;
 }
 
 .copy-btn.copied {
   background: rgba(80,250,123,0.1);
   border-color: rgba(80,250,123,0.2);
   color: var(--d-green);
+  opacity: 1;
 }
 
 /* Inline code */
