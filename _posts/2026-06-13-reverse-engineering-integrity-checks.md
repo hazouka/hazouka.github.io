@@ -23,7 +23,7 @@ fortunately this program doesn't have any encryption inside of it which makes it
 
 # -Static Analysis
 
-```c
+```cpp
 failed_to_load:
   is_initialized = v55 == 0;
   QString::~QString(&v191);
@@ -206,7 +206,7 @@ unequal_sum:
 now doing some dynamic analysis the current Minitool Wizard (13.6) will always go through the first check so i didn't bother reversing the rest.
 it procceeds to pull the hard coded checksum from the mfh file and remove 2 bytes to calculate the checksum and compare if they are are equal or not,if they are not the function will exit and it wont the decompress the array which will result in failing to load the configuration file.
 as i said i will be skipping the else statement but here it is if you want to check it out
-```
+```cpp
 else
     {
       if ( (flag & 4) == 0 )
@@ -252,7 +252,7 @@ LABEL_23:
 ```
 now we will build our code to the decompress the file for us and here it is
 
-```
+```cpp
 auto DecompressMfhFile(char *KeyTable, QByteArray &mfh) {
   mfh.remove(0, 16);
 
@@ -335,7 +335,7 @@ invalid_atomic_ref:
 ```
 you probably already guessed from the previous picture that we are comparing a hard coded hash of our decompressed file with the calculated one and the program does null the hard coded to generate the correct one,put that in mind because we will need this later.
 next we go onto this very big loop
-```
+```cpp
  v45 = *((_DWORD *)QByteArray::data(&decompressed_mfh) + 8);
   OffsetToData = 36;
   if ( v45 > 0 )
@@ -402,7 +402,7 @@ you might be asking how i knew that the first half only grabs the name,thats thr
 ![](/assets/images/reverse-engineering-integrity-checks-images-1781316994384_image.webp){: width="100%"}
 specifically this part where ida had missed it out
 
-```
+```asm
 lea rcx, [rax+rsi]
 lea rdx, [rbp+4D0h+Str]
 ```
