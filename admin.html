@@ -259,7 +259,7 @@ title: Admin
       headers: { Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + cfg.token, 'X-GitHub-Api-Version': '2022-11-28', ...options.headers }
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'HTTP ' + res.status);
+    if (!res.ok) { var e = new Error(data.message || 'HTTP ' + res.status); e.__status = res.status; throw e; }
     return data;
   }
 
@@ -267,21 +267,21 @@ title: Admin
     try {
       return await ghFetch('/contents/' + encodeURIComponent(path));
     } catch(e) {
-      if (e.message && e.message.indexOf('Not Found') > -1) return null;
+      if (e.__status === 404) return null;
       throw e;
     }
   }
 
   async function saveFile(path, content, message) {
-    for (var attempt = 0; attempt < 3; attempt++) {
+    for (var attempt = 0; attempt < 5; attempt++) {
       try {
         var existing = await getFile(path);
         var body = { message: message || 'Update post via admin', content: btoa(unescape(encodeURIComponent(content))), branch: getConfig().branch };
         if (existing && existing.sha) body.sha = existing.sha;
         return await ghFetch('/contents/' + encodeURIComponent(path), { method: 'PUT', body: JSON.stringify(body) });
       } catch(e) {
-        if (attempt < 2 && e.message && e.message.indexOf('does not match') > -1) {
-          await new Promise(r => setTimeout(r, 500));
+        if (attempt < 4 && e.__status === 409) {
+          await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
           continue;
         }
         throw e;
