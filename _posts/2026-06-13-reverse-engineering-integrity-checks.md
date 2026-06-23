@@ -135,7 +135,7 @@ alright this is interesting i already created some structure on IDA for us to un
 ![partitionwizard.exe.mfh](/assets/images/reverse-engineering-integrity-checks-images-1781316994383_image.webp){: width="100%"}
 we can see that that it has the hardcoded version number 03
 
-```
+```cpp
     flag = QByteArray::at(&mfh_arr_2, 1);
     v11.QByteArr = QByteArray::mid(&mfh_arr_2, (unsigned int)&mfh_arr_data_1, 2).QByteArr;
     QByteArray::operator=(&mfh_arr_2, v11.QByteArr);
