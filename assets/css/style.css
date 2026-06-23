@@ -1582,6 +1582,19 @@ body {
 .markdown-body .highlight .err { color: #ff5555; }
 .markdown-body .highlight .w { color: var(--text-dim); }
 
+/* highlight.js — Dracula theme */
+.hljs { background: transparent; display: block; overflow-x: auto; }
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-selector-id, .hljs-variable, .hljs-template-variable, .hljs-tag, .hljs-name, .hljs-selector-pseudo, .hljs-deletion { color: #ff79c6; }
+.hljs-number, .hljs-built_in { color: #bd93f9; }
+.hljs-string, .hljs-addition, .hljs-attribute, .hljs-meta-string, .hljs-regexp, .hljs-link { color: #f1fa8c; }
+.hljs-comment, .hljs-quote, .hljs-meta { color: #6272a4; font-style: italic; }
+.hljs-type, .hljs-selector-class, .hljs-params, .hljs-title.class_ { color: #8be9fd; }
+.hljs-title, .hljs-title.function_, .hljs-section, .hljs-symbol, .hljs-bullet { color: #50fa7b; }
+.hljs-attr, .hljs-variable.language_ { color: #8be9fd; }
+.hljs-operator, .hljs-punctuation { color: #ff79c6; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: bold; }
+
 /* Override markdown code styles for Rouge-wrapped code blocks */
 .markdown-body .highlight pre, .markdown-body pre.highlight { padding: 0; }
 .markdown-body .highlight pre code, .markdown-body pre.highlight code { padding: 1.1rem 1.2rem; }
