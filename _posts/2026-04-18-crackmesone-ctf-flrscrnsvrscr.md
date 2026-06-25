@@ -32,10 +32,12 @@ we need to put `lpCmdLine` in mind because after we just scroll few lines we fin
 
 After one search we found this useful information about `.SCR` is that they have options that can be passed to the command Line:
 
-- **/s** | **-s** Runs the screensaver in full-screen mode
-- **/c** | **-c** Opens the configuration dialog box
-- **/p** | **-p** Previews the screensaver within a small window
-- **/a** | **-a** Changes password settings (this doesn't exist on our program)
+| Flag | Description |
+|------|-------------|
+| **/s** / **-s** | Runs the screensaver in full-screen mode |
+| **/c** / **-c** | Opens the configuration dialog box |
+| **/p** / **-p** | Previews the screensaver within a small window |
+| **/a** / **-a** | Changes password settings (this doesn't exist on our program) |
 
 We continue to read the decompiler code and we end up finding another function call `sub_140002950` that takes hInstance as a parameter going through it again we end up calling another function `sub_140003500` that looks like it has to do with rendering going through we find this intresting string
 

@@ -820,6 +820,9 @@ kbd {
 
 /* Mobile */
 @media (max-width: 700px) {
+  body { overflow: auto; height: auto; }
+  .view { height: auto; overflow-y: visible; margin-top: var(--header-h); }
+
   .site-header { padding: 0 0.8rem; }
   .header-left { gap: 0.3rem; }
   .header-right .hdr-actions { gap: 0.3rem; }
@@ -869,14 +872,34 @@ kbd {
   .site-logo { font-size: 0.85rem; }
   .img-resize-chip { flex-wrap: wrap; font-size: 0.65rem; }
   .img-resize-chip input[type="range"] { width: 60px; }
+
+  .markdown-body table { font-size: 0.78rem; }
+  .markdown-body th,
+  .markdown-body td { padding: 0.4rem 0.5rem; }
 }
 
 @media (max-width: 480px) {
+  body { overflow: auto; height: auto; }
+  .view { height: auto; overflow-y: visible; }
+
   .search-hdr { width: 80px; }
   .hero-title { font-size: 1.4rem; }
   .post-card-title { font-size: 0.9rem; }
   .reading-title { font-size: 1.2rem; }
   .breadcrumb .bc-title { max-width: 80px; }
+
+  .markdown-body { font-size: 0.95rem; }
+  .markdown-body pre code { font-size: 0.7rem; padding: 0.6rem 0.8rem; }
+}
+
+/* Touch devices: bigger hit targets */
+@media (hover: none) and (pointer: coarse) {
+  .btn { padding: 0.5rem 1rem; font-size: 0.85rem; }
+  .tag-chip { padding: 0.35rem 0.75rem; font-size: 0.75rem; }
+  .post-card { padding: 1rem 0.8rem; }
+  .copy-btn { padding: 0.35rem 0.65rem; font-size: 0.75rem; }
+  .site-logo { font-size: 1rem; }
+  .breadcrumb .bc-title { font-size: 0.85rem; }
 }
 
 /* Toolbar */
@@ -996,6 +1019,7 @@ kbd {
 
 .markdown-body pre code {
   display: block;
+  white-space: pre;
   background: transparent;
   color: var(--text);
   padding: 0.8rem 1.2rem;
