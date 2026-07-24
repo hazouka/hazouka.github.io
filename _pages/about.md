@@ -5,6 +5,4 @@ layout: page
 ---
 
 
-Hello. I'm hazoukabe, in this website i will be making posts about reverse engineering, exploitation, crackmes, anything related to computers :)
-
-Reverse Engineering blog by hazouka. Writeups, notes, and analysis of crackmes, CTFs, and software internals.
+Hello. I'm hazoukabe, in this website i will be making posts about reverse engineering, exploitation, crackmes, software internals and anything related to computers :)
